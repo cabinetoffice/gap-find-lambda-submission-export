@@ -1,7 +1,6 @@
 package gov.cabinetoffice.gap.service;
 
 import gov.cabinetoffice.gap.model.Submission;
-import gov.cabinetoffice.gap.model.SubmissionQuestion;
 import gov.cabinetoffice.gap.model.SubmissionSection;
 import org.odftoolkit.odfdom.doc.OdfTextDocument;
 import org.odftoolkit.odfdom.doc.table.OdfTable;
@@ -16,8 +15,6 @@ import org.slf4j.LoggerFactory;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class OdtService {
@@ -82,7 +79,7 @@ public class OdtService {
                     essentialSection.getSectionTitle());
             documentText.appendChild(essentialHeading);
             documentText.appendChild(new OdfTextParagraph(contentDom).addContentWhitespace(""));
-            documentText.appendChild(generateEssentialTable(documentText, essentialSection, submission.getUserId()));
+            documentText.appendChild(generateEssentialTable(documentText, essentialSection, submission.getEmail()));
 
             locationQuestion.addStyledContent(smallHeadingStyle, "Where this funding will be spent");
             locationResponse.addContentWhitespace(String.join(",\n",
@@ -166,7 +163,7 @@ public class OdtService {
      */
     private static TableTableElement generateEssentialTable(final OfficeTextElement documentText,
                                                             final SubmissionSection essentialSection,
-                                                            final UUID userId) {
+                                                            final String email) {
         OdfTable odfTable = OdfTable.newTable(documentText, 7, 2);
 
         odfTable.getRowByIndex(0).getCellByIndex(0).setStringValue("Legal Name of Organisation");
@@ -197,7 +194,7 @@ public class OdtService {
         odfTable.getRowByIndex(7).getCellByIndex(0)
                         .setStringValue("The email address for the lead applicant");
         odfTable.getRowByIndex(7).getCellByIndex(1)
-                        .setStringValue(getEmail(userId, essentialSection));
+                        .setStringValue(email);
 
         odfTable.getRowByIndex(8).getCellByIndex(0)
                 .setStringValue("Charities Commission number if the organisation has one (if blank, number has not been entered)");
@@ -209,15 +206,5 @@ public class OdtService {
                 setStringValue(essentialSection.getQuestionById("APPLICANT_ORG_COMPANIES_HOUSE").getResponse());
 
         return odfTable.getOdfElement();
-    }
-
-    private static String getEmail(final UUID userId, final SubmissionSection essentialSection) {
-        final Optional<SubmissionQuestion> emailQuestion = essentialSection.getQuestions()
-                .stream()
-                .filter(submissionQuestion -> submissionQuestion.getQuestionId().equals("LEAD_APPLICANT_EMAIL"))
-                .findFirst();
-        return emailQuestion.isPresent() ?
-                emailQuestion.get().getResponse() :
-                new CognitoService().getUsersEmailAddressFromId(userId);
     }
 }
