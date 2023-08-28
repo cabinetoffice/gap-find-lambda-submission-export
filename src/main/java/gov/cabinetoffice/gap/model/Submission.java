@@ -24,7 +24,7 @@ public class Submission {
     private String gapId;
     private Instant submittedDate;
     private List<SubmissionSection> sections;
-    private UUID userId;
+    private String email;
 
     public SubmissionSection getSectionById(String sectionId) {
         return this.sections.stream().filter(section -> Objects.equals(section.getSectionId(), sectionId)).findFirst()

@@ -8,7 +8,6 @@ import gov.cabinetoffice.gap.model.SubmissionSection;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
 
 public class SubmissionTestData {
 
@@ -22,10 +21,10 @@ public class SubmissionTestData {
 
     public static final Instant SUBMITTED_DATE = Instant.now();
 
-    public static final UUID USER_ID = UUID.randomUUID();
+    public static final String EMAIL = "testEmailAddress";
 
     public static final Submission SUBMISSION_WITHOUT_SECTIONS = new Submission(SCHEME_ID, SCHEME_NAME, LEGAL_NAME,
-            GAP_ID, SUBMITTED_DATE, null, USER_ID);
+            GAP_ID, SUBMITTED_DATE, null, EMAIL);
 
     public static final String SUBMISSION_SINGLE_EMPTY_SECTION_ARRAY_JSON_STRING = "[" + "    {\n"
             + "      \"schemeId\": \"1\",\n" + "      \"sectionId\": \"8dee2a3b-e19f-4d2b-8ca2-2581b5d1824d\",\n"
@@ -47,9 +46,9 @@ public class SubmissionTestData {
                             .response("test org name").build())));
 
     public static final Submission SUBMISSION_WITH_EMPTY_SECTIONS = new Submission(SCHEME_ID, SCHEME_NAME, LEGAL_NAME,
-            GAP_ID, SUBMITTED_DATE, SINGLE_EMPTY_SECTION_OBJ, USER_ID);
+            GAP_ID, SUBMITTED_DATE, SINGLE_EMPTY_SECTION_OBJ, EMAIL);
 
     public static final Submission SUBMISSION_WITH_ESSENTIAL_SECTION = new Submission(SCHEME_ID, SCHEME_NAME,
-            LEGAL_NAME, GAP_ID, SUBMITTED_DATE, ESSENTIAL_INFO_SECTION, USER_ID);
+            LEGAL_NAME, GAP_ID, SUBMITTED_DATE, ESSENTIAL_INFO_SECTION, EMAIL);
 
 }
