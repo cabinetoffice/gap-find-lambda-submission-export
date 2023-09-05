@@ -5,3 +5,7 @@ target
 env.json
 event.json
 template.yml
+
+### Local properties ###
+application-local.properties
+.env.local
