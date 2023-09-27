@@ -81,8 +81,8 @@ public class ZipServiceTest {
             final ZipEntry generatedODTFile = zis.getNextEntry();
             zis.closeEntry();
 
-            assertEquals("attachments/hello-world.txt", helloWorldFile.getName());
-            assertEquals("attachments/testGapID.odt", generatedODTFile.getName());
+            assertEquals("hello-world.txt", helloWorldFile.getName());
+            assertEquals("testGapID.odt", generatedODTFile.getName());
         }
     }
 
@@ -126,7 +126,7 @@ public class ZipServiceTest {
                 "/9d4a3ed6-5a26-4d02-be49-bab13c11a2bf" +
                 "/test File Name.odt");
 
-        assertEquals("attachments/test File Name.odt", result);
+        assertEquals("test File Name.odt", result);
 
     }
 

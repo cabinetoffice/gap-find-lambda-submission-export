@@ -84,9 +84,8 @@ public class ZipService {
 
     public static String parseFileName(final String fileName) {
         String[] subString = fileName.split("/");
-        final String attachmentPrefix = "attachments/";
 
-        return attachmentPrefix + subString[subString.length - 1];
+        return subString[subString.length - 1];
     }
 
     private static void zipFiles(final List<String> files) throws IOException {
