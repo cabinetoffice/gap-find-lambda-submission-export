@@ -11,8 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -82,17 +81,23 @@ public class ZipService {
         }
     }
 
-    public static String parseFileName(final String fileName) {
+    public static String parseFileName(final String fileName, int suffix) {
         String[] subString = fileName.split("/");
+        String[] parts = subString[subString.length - 1].split("\\.");
 
-        return subString[subString.length - 1];
+        String name = parts[0];
+        String extension = parts.length > 1 ? "." + parts[1] : "";
+
+        return name.concat("_" + suffix + extension);
     }
 
     private static void zipFiles(final List<String> files) throws IOException {
         try (final FileOutputStream fout = new FileOutputStream(TMP_DIR + LOCAL_ZIP_FILE_NAME);
                 final ZipOutputStream zout = new ZipOutputStream(fout)) {
+            int index = 1;
             for (String filename : files) {
-                addFileToZip(filename, zout);
+                addFileToZip(filename, zout, index);
+                index++;
             }
         }
         catch (FileNotFoundException e) {
@@ -105,10 +110,11 @@ public class ZipService {
         }
     }
 
-    private static void addFileToZip(final String filename, final ZipOutputStream zout) throws IOException {
+    private static void addFileToZip(final String filename, final ZipOutputStream zout,
+                                     final int index) throws IOException {
         try (final FileInputStream fis = new FileInputStream(TMP_DIR + filename)) {
             // Create zip entry within the zipped file
-            final ZipEntry ze = new ZipEntry(parseFileName(filename));
+            final ZipEntry ze = new ZipEntry(parseFileName(filename, index));
             zout.putNextEntry(ze);
             // Copy file contents over to zip entry
             int length;

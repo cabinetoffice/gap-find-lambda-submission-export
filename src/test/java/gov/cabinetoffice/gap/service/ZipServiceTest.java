@@ -81,8 +81,8 @@ public class ZipServiceTest {
             final ZipEntry generatedODTFile = zis.getNextEntry();
             zis.closeEntry();
 
-            assertEquals("hello-world.txt", helloWorldFile.getName());
-            assertEquals("testGapID.odt", generatedODTFile.getName());
+            assertEquals("hello-world_1.txt", helloWorldFile.getName());
+            assertEquals("testGapID_2.odt", generatedODTFile.getName());
         }
     }
 
@@ -124,10 +124,9 @@ public class ZipServiceTest {
                 "/13" +
                 "/035f31f6-2877-4f87-8a9b-32649a527668" +
                 "/9d4a3ed6-5a26-4d02-be49-bab13c11a2bf" +
-                "/test File Name.odt");
+                "/test File Name.odt", 1);
 
-        assertEquals("test File Name.odt", result);
-
+        assertEquals("test File Name_1.odt", result);
     }
 
     private File unzipFile(final ZipInputStream zis, final String filePath) throws Exception {
