@@ -82,6 +82,13 @@ public class ZipService {
         }
     }
 
+    public static String parseFileName(final String fileName) {
+        String[] subString = fileName.split("/");
+        final String attachmentPrefix = "attachments/";
+
+        return attachmentPrefix + subString[subString.length - 1];
+    }
+
     private static void zipFiles(final List<String> files) throws IOException {
         try (final FileOutputStream fout = new FileOutputStream(TMP_DIR + LOCAL_ZIP_FILE_NAME);
                 final ZipOutputStream zout = new ZipOutputStream(fout)) {
@@ -102,7 +109,7 @@ public class ZipService {
     private static void addFileToZip(final String filename, final ZipOutputStream zout) throws IOException {
         try (final FileInputStream fis = new FileInputStream(TMP_DIR + filename)) {
             // Create zip entry within the zipped file
-            final ZipEntry ze = new ZipEntry(filename);
+            final ZipEntry ze = new ZipEntry(parseFileName(filename));
             zout.putNextEntry(ze);
             // Copy file contents over to zip entry
             int length;
