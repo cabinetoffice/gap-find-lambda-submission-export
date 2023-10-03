@@ -17,6 +17,7 @@ import java.io.FileWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -38,6 +39,7 @@ public class ZipServiceTest {
         final List<S3ObjectSummary> objectSummaryList = new ArrayList<>();
         final S3ObjectSummary s3ObjectSummary = new S3ObjectSummary();
         s3ObjectSummary.setKey("hello-world.txt");
+        s3ObjectSummary.setLastModified(new Date());
         objectSummaryList.add(s3ObjectSummary);
         when(client.listObjectsV2(any(ListObjectsV2Request.class)))
                 .thenReturn(res);
