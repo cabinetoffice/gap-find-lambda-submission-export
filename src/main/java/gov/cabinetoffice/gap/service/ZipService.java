@@ -7,11 +7,13 @@ import com.amazonaws.services.s3.model.ListObjectsV2Request;
 import com.amazonaws.services.s3.model.ListObjectsV2Result;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import gov.cabinetoffice.gap.model.Submission;
+import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -106,6 +108,13 @@ public class ZipService {
         return name.concat("_" + suffix + extension);
     }
 
+    public static void deleteTmpDirContents() {
+        try {
+            FileUtils.cleanDirectory(new File(TMP_DIR));
+        } catch (IOException e) {
+            logger.error("Could not delete the contents of the tmp directory", e);
+        }
+    }
     private static void zipFiles(final List<String> files) throws IOException {
         try (final FileOutputStream fout = new FileOutputStream(TMP_DIR + LOCAL_ZIP_FILE_NAME);
                 final ZipOutputStream zout = new ZipOutputStream(fout)) {

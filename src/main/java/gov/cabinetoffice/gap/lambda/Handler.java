@@ -71,6 +71,10 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
                 logger.info(
                         String.format("Outstanding exports for export batch %s: %s", exportBatchId, outstandingCount));
             }
+
+            // STEP 9 - actually be a stateless AWS lambda
+            client.shutdown();
+            ZipService.deleteTmpDirContents();
         }
         catch (Exception e) {
             logger.error("Could not process message", e);
