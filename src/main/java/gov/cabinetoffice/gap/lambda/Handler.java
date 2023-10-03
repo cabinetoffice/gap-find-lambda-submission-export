@@ -20,11 +20,10 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
 
     private static final Logger logger = LoggerFactory.getLogger(Handler.class);
 
-    private static final AmazonS3 client = AmazonS3ClientBuilder.defaultClient();
-
     @Override
     public SQSBatchResponse handleRequest(final SQSEvent event, final Context context) {
         try {
+            final AmazonS3 client = AmazonS3ClientBuilder.defaultClient();
             final Map<String, SQSEvent.MessageAttribute> messageAttributes = event.getRecords().get(0)
                     .getMessageAttributes();
             final String submissionId = messageAttributes.get("submissionId").getStringValue();
