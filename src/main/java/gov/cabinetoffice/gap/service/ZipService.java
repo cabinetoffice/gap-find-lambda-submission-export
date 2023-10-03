@@ -52,8 +52,7 @@ public class ZipService {
                     new File(TMP_DIR + LOCAL_ZIP_FILE_NAME));
 
             return objectKey;
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             logger.error("Could not upload to S3", e);
             throw e;
         }
@@ -64,17 +63,33 @@ public class ZipService {
         final ListObjectsV2Request req = new ListObjectsV2Request().withBucketName(SUBMISSION_ATTACHMENTS_BUCKET_NAME)
                 .withPrefix(applicationId + "/" + submissionId);
         final ListObjectsV2Result listing = s3Client.listObjectsV2(req);
+        final List<S3ObjectSummary> objectSummaries = listing.getObjectSummaries();
+        final List<S3ObjectSummary> mostRecentObjectSummaries = objectSummaries.stream()
+                .filter(objectSummary -> {
+                    final List<String> keyParts = List.of(objectSummary.getKey().split("/"));
+                    final String prefix = keyParts.stream().limit(3).collect(Collectors.joining("/"));
+                    final List<S3ObjectSummary> matchingObjectSummaries = getAllFromPrefix(objectSummaries, prefix);
+                    return matchingObjectSummaries.stream()
+                            .allMatch(os -> os.getLastModified().before(objectSummary.getLastModified()) || os.equals(objectSummary));
+                })
+                .collect(Collectors.toList());
+        return mostRecentObjectSummaries.stream()
+                .map(S3ObjectSummary::getKey)
+                .filter(filename -> filename.contains("."))
+                .collect(Collectors.toList());
+    }
 
-        return listing.getObjectSummaries().stream().map(S3ObjectSummary::getKey)
-                .filter(filename -> filename.contains(".")).collect(Collectors.toList());
+    private static List<S3ObjectSummary> getAllFromPrefix(final List<S3ObjectSummary> objectSummaries, final String prefix) {
+        return objectSummaries.stream()
+                .filter(objectSummary -> objectSummary.getKey().startsWith(prefix))
+                .collect(Collectors.toList());
     }
 
     private static void downloadFile(final String fileName) {
         try {
             File localFile = new File(TMP_DIR + fileName);
             s3Client.getObject(new GetObjectRequest(SUBMISSION_ATTACHMENTS_BUCKET_NAME, fileName), localFile);
-        }
-        catch (AmazonServiceException e) {
+        } catch (AmazonServiceException e) {
             logger.error("Could not download file: " + fileName + " from bucket: " + SUBMISSION_ATTACHMENTS_BUCKET_NAME,
                     e);
             throw e;
@@ -99,12 +114,10 @@ public class ZipService {
                 addFileToZip(filename, zout, index);
                 index++;
             }
-        }
-        catch (FileNotFoundException e) {
+        } catch (FileNotFoundException e) {
             logger.error("Could not create the locally zipped file: " + LOCAL_ZIP_FILE_NAME, e);
             throw e;
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             logger.error("IO exception while creating the empty zipped file", e);
             throw e;
         }
@@ -124,12 +137,10 @@ public class ZipService {
             }
             // Close streams
             zout.closeEntry();
-        }
-        catch (FileNotFoundException e) {
+        } catch (FileNotFoundException e) {
             logger.error("Could not create a zip entry with the name: " + filename, e);
             throw e;
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             logger.error("IO exception while creating the zip entry with the name: " + filename, e);
             throw e;
         }
