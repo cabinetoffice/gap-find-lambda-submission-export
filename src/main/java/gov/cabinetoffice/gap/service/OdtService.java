@@ -155,6 +155,7 @@ public class OdtService {
             logger.error("Could not generate ODT for given submission", e);
             throw e;
         }
+        logger.info("ODT file generated successfully");
     }
 
     /**
