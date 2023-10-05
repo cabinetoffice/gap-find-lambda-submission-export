@@ -36,12 +36,14 @@ public class ZipService {
         s3Client = client;
         final List<String> submissionAttachmentFileNames = getSubmissionAttachmentFileNames(client, applicationId,
                 submissionId);
-
+        logger.info("submissionAttachmentFileNames " + submissionAttachmentFileNames);
         for (String fileName : submissionAttachmentFileNames) {
+            logger.info("fileName " + fileName);
             downloadFile(fileName);
         }
 
         final List<String> fileNamesToZIP = new ArrayList<>(submissionAttachmentFileNames);
+            fileNamesToZIP.forEach(f-> logger.info("fileNmaesToZip List",f));
         fileNamesToZIP.add(filename + ".odt");
 
         zipFiles(fileNamesToZIP);
@@ -71,10 +73,13 @@ public class ZipService {
         return objectSummaries.stream()
                 .filter(objectSummary -> {
                     final List<String> keyParts = List.of(objectSummary.getKey().split("/"));
+                    logger.info("keyParts " + keyParts);
                     final String prefix = keyParts.stream().limit(3).collect(Collectors.joining("/"));
+                    logger.info("prefix " + prefix);
                     final List<S3ObjectSummary> matchingObjectSummaries = getAllFromPrefix(objectSummaries, prefix);
+                    logger.info("matchingObjectSummaries " + matchingObjectSummaries);
                     return matchingObjectSummaries.stream()
-                            .allMatch(os -> os.getLastModified().before(objectSummary.getLastModified()) || os.getLastModified().equals(objectSummary.getLastModified()));
+                      .allMatch(os -> os.getLastModified().before(objectSummary.getLastModified()) || os.getLastModified().equals(objectSummary.getLastModified()));
                 })
                 .map(S3ObjectSummary::getKey)
                 .filter(filename -> filename.contains("."))
@@ -90,6 +95,7 @@ public class ZipService {
     private static void downloadFile(final String fileName) {
         try {
             File localFile = new File(TMP_DIR + fileName);
+            logger.info("localFile " + localFile);
             s3Client.getObject(new GetObjectRequest(SUBMISSION_ATTACHMENTS_BUCKET_NAME, fileName), localFile);
         } catch (AmazonServiceException e) {
             logger.error("Could not download file: " + fileName + " from bucket: " + SUBMISSION_ATTACHMENTS_BUCKET_NAME,
@@ -100,11 +106,16 @@ public class ZipService {
 
     public static String parseFileName(final String fileName, int suffix) {
         String[] subString = fileName.split("/");
+        logger.info("subString " + subString);
         String[] parts = subString[subString.length - 1].split("\\.");
+        logger.info("parts " + parts);
 
         String name = parts[0];
+        logger.info("name " + name);
         String extension = parts.length > 1 ? "." + parts[1] : "";
+        logger.info("extension " + extension);
 
+        logger.info("name concat " + name.concat("_" + suffix + extension));
         return name.concat("_" + suffix + extension);
     }
 
@@ -115,11 +126,14 @@ public class ZipService {
             logger.error("Could not delete the contents of the tmp directory", e);
         }
     }
+
     private static void zipFiles(final List<String> files) throws IOException {
-        try (final FileOutputStream fout = new FileOutputStream(TMP_DIR + LOCAL_ZIP_FILE_NAME);
-                final ZipOutputStream zout = new ZipOutputStream(fout)) {
+        try (
+            final FileOutputStream fout = new FileOutputStream(TMP_DIR + LOCAL_ZIP_FILE_NAME);
+            final ZipOutputStream zout = new ZipOutputStream(fout)) {
             int index = 1;
             for (String filename : files) {
+                logger.info("filename " + filename);
                 addFileToZip(filename, zout, index);
                 index++;
             }
@@ -136,6 +150,7 @@ public class ZipService {
                                      final int index) throws IOException {
         try (final FileInputStream fis = new FileInputStream(TMP_DIR + filename)) {
             // Create zip entry within the zipped file
+
             final ZipEntry ze = new ZipEntry(parseFileName(filename, index));
             zout.putNextEntry(ze);
             // Copy file contents over to zip entry
