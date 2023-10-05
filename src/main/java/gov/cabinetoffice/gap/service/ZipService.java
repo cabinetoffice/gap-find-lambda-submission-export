@@ -73,11 +73,8 @@ public class ZipService {
         return objectSummaries.stream()
                 .filter(objectSummary -> {
                     final List<String> keyParts = List.of(objectSummary.getKey().split("/"));
-                    logger.info("keyParts " + keyParts);
                     final String prefix = keyParts.stream().limit(3).collect(Collectors.joining("/"));
-                    logger.info("prefix " + prefix);
                     final List<S3ObjectSummary> matchingObjectSummaries = getAllFromPrefix(objectSummaries, prefix);
-                    logger.info("matchingObjectSummaries " + matchingObjectSummaries);
                     return matchingObjectSummaries.stream()
                       .allMatch(os -> os.getLastModified().before(objectSummary.getLastModified()) || os.getLastModified().equals(objectSummary.getLastModified()));
                 })
