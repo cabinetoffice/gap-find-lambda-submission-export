@@ -96,9 +96,10 @@ public class ZipService {
         }
     }
 
-    public static String parseFileName(final String fileName, int suffix) {
-        String[] subString = fileName.split("/");
-        String[] parts = subString[subString.length - 1].split("\\.");
+    public static String parseFileName(final String filepath, int suffix) {
+        String[] filepathSections = filepath.split("/");
+        String filename = filepathSections[filepathSections.length - 1].replaceAll("[^\\w\\-(). ]+", "");
+        String[] parts = filename.split("\\.");
 
         String name = String.join("", Arrays.copyOfRange(parts, 0, parts.length - 1));
         String extension = parts.length > 1 ? "." + parts[parts.length - 1] : "";

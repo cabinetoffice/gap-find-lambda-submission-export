@@ -121,7 +121,6 @@ public class ZipServiceTest {
 
     @Test
     void shouldReturnLastPartOfSubStringWhenFileNameIsParsed() {
-
         String result = ZipService.parseFileName("s3://gap-attachments" +
                 "/13" +
                 "/035f31f6-2877-4f87-8a9b-32649a527668" +
@@ -129,6 +128,28 @@ public class ZipServiceTest {
                 "/test File Name.odt", 1);
 
         assertEquals("test File Name_1.odt", result);
+    }
+
+    @Test
+    void shouldHandleMultiplePeriodsInFilename() {
+        String result = ZipService.parseFileName("s3://gap-attachments" +
+                "/13" +
+                "/035f31f6-2877-4f87-8a9b-32649a527668" +
+                "/9d4a3ed6-5a26-4d02-be49-bab13c11a2bf" +
+                "/test... File Name.FLL. odt.odt.blarg", 1);
+
+        assertEquals("test File NameFLL odtodt_1.blarg", result);
+    }
+
+    @Test
+    void shouldStripSpecialCharsFromFilename() {
+        String result = ZipService.parseFileName("s3://gap-attachments" +
+                "/13" +
+                "/035f31f6-2877-4f87-8a9b-32649a527668" +
+                "/9d4a3ed6-5a26-4d02-be49-bab13c11a2bf" +
+                "/test... File {{{}}} Name.???FLL. odt.&*%*$odt.xls", 1);
+
+        assertEquals("test File  NameFLL odtodt_1.xls", result);
     }
 
     private File unzipFile(final ZipInputStream zis, final String filePath) throws Exception {
