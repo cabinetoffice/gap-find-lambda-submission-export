@@ -111,11 +111,16 @@ public class ZipService {
 
     public static String parseFileName(final String fileName, int suffix) {
         String[] subString = fileName.split("/");
+        logger.info("subString " + subString);
         String[] parts = subString[subString.length - 1].split("\\.");
+        logger.info("parts " + parts);
 
         String name = parts[0];
+        logger.info("name " + name);
         String extension = parts.length > 1 ? "." + parts[1] : "";
+        logger.info("extension " + extension);
 
+        logger.info("name concat " + name.concat("_" + suffix + extension));
         return name.concat("_" + suffix + extension);
     }
 
@@ -133,6 +138,7 @@ public class ZipService {
             final ZipOutputStream zout = new ZipOutputStream(fout)) {
             int index = 1;
             for (String filename : files) {
+                logger.info("filename " + filename);
                 addFileToZip(filename, zout, index);
                 index++;
             }
@@ -149,6 +155,7 @@ public class ZipService {
                                      final int index) throws IOException {
         try (final FileInputStream fis = new FileInputStream(TMP_DIR + filename)) {
             // Create zip entry within the zipped file
+
             final ZipEntry ze = new ZipEntry(parseFileName(filename, index));
             zout.putNextEntry(ze);
             // Copy file contents over to zip entry
