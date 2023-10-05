@@ -36,12 +36,14 @@ public class ZipService {
         s3Client = client;
         final List<String> submissionAttachmentFileNames = getSubmissionAttachmentFileNames(applicationId,
                 submissionId);
-
+        logger.info("submissionAttachmentFileNames " + submissionAttachmentFileNames);
         for (String fileName : submissionAttachmentFileNames) {
+            logger.info("fileName " + fileName);
             downloadFile(fileName);
         }
 
         final List<String> fileNamesToZIP = new ArrayList<>(submissionAttachmentFileNames);
+            fileNamesToZIP.forEach(f-> logger.info("fileNmaesToZip List",f));
         fileNamesToZIP.add(filename + ".odt");
 
         zipFiles(fileNamesToZIP);
@@ -69,12 +71,20 @@ public class ZipService {
         final List<S3ObjectSummary> mostRecentObjectSummaries = objectSummaries.stream()
                 .filter(objectSummary -> {
                     final List<String> keyParts = List.of(objectSummary.getKey().split("/"));
+                    logger.info("keyParts " + keyParts);
                     final String prefix = keyParts.stream().limit(3).collect(Collectors.joining("/"));
+                    logger.info("prefix " + prefix);
                     final List<S3ObjectSummary> matchingObjectSummaries = getAllFromPrefix(objectSummaries, prefix);
+                    logger.info("matchingObjectSummaries " + matchingObjectSummaries);
                     return matchingObjectSummaries.stream()
-                            .allMatch(os -> os.getLastModified().before(objectSummary.getLastModified()) || os.equals(objectSummary));
+                            .allMatch(os -> {
+                                logger.info("os " + os);
+                                return  os.getLastModified().before(objectSummary.getLastModified()) || os.equals(objectSummary);
+                            });
+
                 })
                 .collect(Collectors.toList());
+        logger.info("mostRecentObjectSummaries " + mostRecentObjectSummaries);
         return mostRecentObjectSummaries.stream()
                 .map(S3ObjectSummary::getKey)
                 .filter(filename -> filename.contains("."))
@@ -90,6 +100,7 @@ public class ZipService {
     private static void downloadFile(final String fileName) {
         try {
             File localFile = new File(TMP_DIR + fileName);
+            logger.info("localFile " + localFile);
             s3Client.getObject(new GetObjectRequest(SUBMISSION_ATTACHMENTS_BUCKET_NAME, fileName), localFile);
         } catch (AmazonServiceException e) {
             logger.error("Could not download file: " + fileName + " from bucket: " + SUBMISSION_ATTACHMENTS_BUCKET_NAME,
@@ -115,9 +126,11 @@ public class ZipService {
             logger.error("Could not delete the contents of the tmp directory", e);
         }
     }
+
     private static void zipFiles(final List<String> files) throws IOException {
-        try (final FileOutputStream fout = new FileOutputStream(TMP_DIR + LOCAL_ZIP_FILE_NAME);
-                final ZipOutputStream zout = new ZipOutputStream(fout)) {
+        try (
+            final FileOutputStream fout = new FileOutputStream(TMP_DIR + LOCAL_ZIP_FILE_NAME);
+            final ZipOutputStream zout = new ZipOutputStream(fout)) {
             int index = 1;
             for (String filename : files) {
                 addFileToZip(filename, zout, index);
