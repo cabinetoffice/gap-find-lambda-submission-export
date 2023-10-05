@@ -100,8 +100,8 @@ public class ZipService {
         String[] subString = fileName.split("/");
         String[] parts = subString[subString.length - 1].split("\\.");
 
-        String name = parts[0];
-        String extension = parts.length > 1 ? "." + parts[1] : "";
+        String name = String.join("", Arrays.copyOfRange(parts, 0, parts.length - 1));
+        String extension = parts.length > 1 ? "." + parts[parts.length - 1] : "";
 
         return name.concat("_" + suffix + extension);
     }
