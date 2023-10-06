@@ -128,7 +128,6 @@ public class ZipService {
             final ZipOutputStream zout = new ZipOutputStream(fout)) {
             int index = 1;
             for (String filename : files) {
-                logger.info("filename " + filename);
                 addFileToZip(filename, zout, index, applicationId, submissionId);
                 index++;
             }

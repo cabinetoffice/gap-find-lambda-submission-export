@@ -38,12 +38,12 @@ public class ZipServiceTest {
         final ListObjectsV2Result res = Mockito.mock(ListObjectsV2Result.class);
         final List<S3ObjectSummary> objectSummaryList = new ArrayList<>();
         final S3ObjectSummary s3ObjectSummary1 = new S3ObjectSummary();
-        s3ObjectSummary1.setKey("/some/random/prefix/hello-world1.txt");
+        s3ObjectSummary1.setKey("some/random/prefix/hello-world1.txt");
         s3ObjectSummary1.setLastModified(new Date());
         objectSummaryList.add(s3ObjectSummary1);
         Thread.sleep(1000);
         final S3ObjectSummary s3ObjectSummary2 = new S3ObjectSummary();
-        s3ObjectSummary2.setKey("/some/random/prefix/hello-world2.txt");
+        s3ObjectSummary2.setKey("some/random/prefix/hello-world2.txt");
         s3ObjectSummary2.setLastModified(new Date());
         objectSummaryList.add(s3ObjectSummary2);
 
@@ -86,7 +86,7 @@ public class ZipServiceTest {
 
     @Test
     void createZip_zippedFilesExist() throws Exception {
-        ZipService.createZip(s3client, "testGapID", "testApplicationId", "testSubmissionId");
+        ZipService.createZip(s3client, "testGapID", "some", "random");
 
         final String fileZip = "/tmp/submission.zip";
         try(final ZipInputStream zis = new ZipInputStream(new FileInputStream(fileZip))) {
