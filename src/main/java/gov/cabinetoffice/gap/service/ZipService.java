@@ -11,7 +11,11 @@ import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -32,7 +36,7 @@ public class ZipService {
     private static AmazonS3 s3Client;
 
     public static void createZip(final AmazonS3 client, final String filename, final String applicationId,
-            final String submissionId) throws IOException {
+                                 final String submissionId) throws IOException {
         s3Client = client;
         final List<String> submissionAttachmentFileNames = getSubmissionAttachmentFileNames(applicationId,
                 submissionId);
@@ -60,7 +64,7 @@ public class ZipService {
     }
 
     private static List<String> getSubmissionAttachmentFileNames(final String applicationId,
-            final String submissionId) {
+                                                                 final String submissionId) {
         final ListObjectsV2Request req = new ListObjectsV2Request().withBucketName(SUBMISSION_ATTACHMENTS_BUCKET_NAME)
                 .withPrefix(applicationId + "/" + submissionId);
         final ListObjectsV2Result listing = s3Client.listObjectsV2(req);
@@ -101,22 +105,14 @@ public class ZipService {
 
     public static String parseFileName(final String objectKey, int suffix, final String applicationId,
                                        final String submissionId) {
-        //an object key is formed by applicationId/submissionId/s3bucketRandomFolderName/filename
-        final String applicationIdAndSubmissionId = applicationId + "/" + submissionId + "/";
-        final String filenameWithoutApplicationIdAndSubmissionId = objectKey.replace(applicationIdAndSubmissionId, "");
-        final String folderNameToRemove = filenameWithoutApplicationIdAndSubmissionId.split("/")[0];
-        final String filenameWithoutFolderName = filenameWithoutApplicationIdAndSubmissionId.replace(folderNameToRemove + "/", "");
-        //the file that we allow to attach can only be of the following types: .doc, .docx, .odt, .pdf, .xls, .xlsx, .zip
-        String filenameWithoutExtension = filenameWithoutFolderName.split("\\.(doc|docx|odt|pdf|xls|xlsx|zip)$")[0];
-        String fileExtension = filenameWithoutFolderName.replace(filenameWithoutExtension, "");
-        //edge scenario where a file doesn't have the expected extension.
-        if(filenameWithoutFolderName.equals(filenameWithoutExtension)){
-            final String[] fileNameParts = filenameWithoutFolderName.split("\\.");
-             fileExtension = "." + fileNameParts[fileNameParts.length - 1];
-            filenameWithoutExtension = filenameWithoutFolderName.replace( fileExtension, "");
-        }
+        final String filenameWithoutFolderName = getFileNameFromS3ObjectKey(objectKey, applicationId, submissionId);
+        final String[] fileNameParts = filenameWithoutFolderName.split("\\.");
+        final String fileExtension = "." + fileNameParts[fileNameParts.length - 1];
+        final String filenameWithoutExtension = filenameWithoutFolderName.replace(fileExtension, "");
+
         return filenameWithoutExtension.concat("_" + suffix + fileExtension);
     }
+
 
     public static void deleteTmpDirContents() {
         try {
@@ -126,11 +122,11 @@ public class ZipService {
         }
     }
 
-    private static void zipFiles(final List<String> files,final String applicationId,
+    private static void zipFiles(final List<String> files, final String applicationId,
                                  final String submissionId) throws IOException {
         try (
-            final FileOutputStream fout = new FileOutputStream(TMP_DIR + LOCAL_ZIP_FILE_NAME);
-            final ZipOutputStream zout = new ZipOutputStream(fout)) {
+                final FileOutputStream fout = new FileOutputStream(TMP_DIR + LOCAL_ZIP_FILE_NAME);
+                final ZipOutputStream zout = new ZipOutputStream(fout)) {
             int index = 1;
             for (String filename : files) {
                 logger.info("filename " + filename);
@@ -147,7 +143,7 @@ public class ZipService {
     }
 
     private static void addFileToZip(final String filename, final ZipOutputStream zout,
-                                     final int index,final String applicationId,
+                                     final int index, final String applicationId,
                                      final String submissionId) throws IOException {
         try (final FileInputStream fis = new FileInputStream(TMP_DIR + filename)) {
             // Create zip entry within the zipped file
@@ -171,4 +167,11 @@ public class ZipService {
         }
     }
 
+    private static String getFileNameFromS3ObjectKey(String objectKey, String applicationId, String submissionId) {
+        //an object key is formed by applicationId/submissionId/s3bucketRandomFolderName/filename
+        final String applicationIdAndSubmissionId = applicationId + "/" + submissionId + "/";
+        final String filenameWithoutApplicationIdAndSubmissionId = objectKey.replace(applicationIdAndSubmissionId, "");
+        final String folderNameToRemove = filenameWithoutApplicationIdAndSubmissionId.split("/")[0];
+        return filenameWithoutApplicationIdAndSubmissionId.replace(folderNameToRemove + "/", "");
+    }
 }

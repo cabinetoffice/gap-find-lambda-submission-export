@@ -148,7 +148,7 @@ public class ZipServiceTest {
 
     @Test
     void shouldReturnFileNameWithSuffixWhenFileNameHasLoadsOfSpecialCharacter() {
-        String result = ZipService.parseFileName("330/submission/folder//test... /File {{{}}} Name.???FLL. odt.&*%*$odt.xls", 1, "330","submission");
+        String result = ZipService.parseFileName("330/submission/folder//test... /File {{{}}} Name.???FLL. odt.&*%*$"+ "odt.xls", 1, "330","submission");
 
         assertEquals("/test... /File {{{}}} Name.???FLL. odt.&*%*$odt_1.xls", result);
     }
