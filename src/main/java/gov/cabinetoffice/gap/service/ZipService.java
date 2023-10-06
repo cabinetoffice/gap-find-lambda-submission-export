@@ -32,7 +32,8 @@ public class ZipService {
 
     private static final String SUBMISSION_ATTACHMENTS_BUCKET_NAME = System
             .getenv("SUBMISSION_ATTACHMENTS_BUCKET_NAME");
-
+    //regex for any special character that are not allowed in window os : <, >, ", /, \, |, ?, or *
+    private static final String SPECIAL_CHARACTER_REGEX = "[<>\"\\/|?*\\\\]";
     private static AmazonS3 s3Client;
 
     public static void createZip(final AmazonS3 client, final String filename, final String applicationId,
@@ -172,6 +173,6 @@ public class ZipService {
         final String applicationIdAndSubmissionId = applicationId + "/" + submissionId + "/";
         final String filenameWithoutApplicationIdAndSubmissionId = objectKey.replace(applicationIdAndSubmissionId, "");
         final String folderNameToRemove = filenameWithoutApplicationIdAndSubmissionId.split("/")[0];
-        return filenameWithoutApplicationIdAndSubmissionId.replace(folderNameToRemove + "/", "");
+        return filenameWithoutApplicationIdAndSubmissionId.replace(folderNameToRemove + "/", "").replaceAll(SPECIAL_CHARACTER_REGEX, "_");
     }
 }
