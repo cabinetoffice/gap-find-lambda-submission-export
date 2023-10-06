@@ -31,6 +31,8 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
             final String exportBatchId = messageAttributes.get("exportBatchId").getStringValue();
             final String applicationId = messageAttributes.get("applicationId").getStringValue();
 
+            logger.info("Received message with submissionId: {} and exportBatchId: {}", submissionId, exportBatchId);
+
             // STEP 0 - update export record to PROCESSING
             ExportRecordService.updateExportRecordStatus(exportBatchId, submissionId, GrantExportStatus.PROCESSING);
 
@@ -52,6 +54,7 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
 
             // STEP 5 - generate signed url for zip file
             String signedUrl = S3Service.generateExportDocSignedUrl(client, zipObjectKey);
+            logger.info("Signed URL created");
 
             // Step 6 - Add signedURL to export
             ExportRecordService.addSignedUrlToExportRecord(exportBatchId, submissionId, signedUrl);
@@ -74,12 +77,14 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
             // STEP 9 - actually be a stateless AWS lambda
             client.shutdown();
             ZipService.deleteTmpDirContents();
+            logger.info("Connections & tmp dir cleared");
         }
         catch (Exception e) {
             logger.error("Could not process message", e);
             throw new RuntimeException(e);
         }
 
+        logger.info("Message processed successfully");
         return new SQSBatchResponse();
     }
 

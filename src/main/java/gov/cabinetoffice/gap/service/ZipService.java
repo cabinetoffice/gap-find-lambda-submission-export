@@ -39,7 +39,7 @@ public class ZipService {
     public static void createZip(final AmazonS3 client, final String filename, final String applicationId,
                                  final String submissionId) throws IOException {
         s3Client = client;
-        final List<String> submissionAttachmentFileNames = getSubmissionAttachmentFileNames(applicationId,
+        final List<String> submissionAttachmentFileNames = getSubmissionAttachmentFileNames(client, applicationId,
                 submissionId);
         for (String fileName : submissionAttachmentFileNames) {
             downloadFile(fileName);
@@ -49,6 +49,8 @@ public class ZipService {
         fileNamesToZIP.add(filename + ".odt");
 
         zipFiles(fileNamesToZIP, applicationId, submissionId);
+
+        logger.info("Zip file created");
     }
 
     public static String uploadZip(final Submission submission, final String zipFilename) {
@@ -56,7 +58,7 @@ public class ZipService {
             final String objectKey = submission.getGapId() + "/" + zipFilename + ".zip";
             s3Client.putObject(System.getenv("SUBMISSION_EXPORTS_BUCKET_NAME"), objectKey,
                     new File(TMP_DIR + LOCAL_ZIP_FILE_NAME));
-
+            logger.info("Zip file uploaded to S3");
             return objectKey;
         } catch (Exception e) {
             logger.error("Could not upload to S3", e);
@@ -64,24 +66,21 @@ public class ZipService {
         }
     }
 
-    private static List<String> getSubmissionAttachmentFileNames(final String applicationId,
-                                                                 final String submissionId) {
+    public static List<String> getSubmissionAttachmentFileNames(final AmazonS3 s3Client,
+                                                                final String applicationId,
+                                                                final String submissionId) {
         final ListObjectsV2Request req = new ListObjectsV2Request().withBucketName(SUBMISSION_ATTACHMENTS_BUCKET_NAME)
                 .withPrefix(applicationId + "/" + submissionId);
         final ListObjectsV2Result listing = s3Client.listObjectsV2(req);
         final List<S3ObjectSummary> objectSummaries = listing.getObjectSummaries();
-        final List<S3ObjectSummary> mostRecentObjectSummaries = objectSummaries.stream()
+        return objectSummaries.stream()
                 .filter(objectSummary -> {
                     final List<String> keyParts = List.of(objectSummary.getKey().split("/"));
                     final String prefix = keyParts.stream().limit(3).collect(Collectors.joining("/"));
                     final List<S3ObjectSummary> matchingObjectSummaries = getAllFromPrefix(objectSummaries, prefix);
                     return matchingObjectSummaries.stream()
-                            .allMatch(os -> os.getLastModified().before(objectSummary.getLastModified()) || os.equals(objectSummary)
-                            );
-
+                      .allMatch(os -> os.getLastModified().before(objectSummary.getLastModified()) || os.getLastModified().equals(objectSummary.getLastModified()));
                 })
-                .collect(Collectors.toList());
-        return mostRecentObjectSummaries.stream()
                 .map(S3ObjectSummary::getKey)
                 .filter(filename -> filename.contains("."))
                 .collect(Collectors.toList());
@@ -114,7 +113,6 @@ public class ZipService {
         return filenameWithoutExtension.concat("_" + suffix + fileExtension);
     }
 
-
     public static void deleteTmpDirContents() {
         try {
             FileUtils.cleanDirectory(new File(TMP_DIR));
@@ -126,11 +124,10 @@ public class ZipService {
     private static void zipFiles(final List<String> files, final String applicationId,
                                  final String submissionId) throws IOException {
         try (
-                final FileOutputStream fout = new FileOutputStream(TMP_DIR + LOCAL_ZIP_FILE_NAME);
-                final ZipOutputStream zout = new ZipOutputStream(fout)) {
+            final FileOutputStream fout = new FileOutputStream(TMP_DIR + LOCAL_ZIP_FILE_NAME);
+            final ZipOutputStream zout = new ZipOutputStream(fout)) {
             int index = 1;
             for (String filename : files) {
-                logger.info("filename " + filename);
                 addFileToZip(filename, zout, index, applicationId, submissionId);
                 index++;
             }

@@ -39,6 +39,7 @@ public class RestService {
 
         try (Response response = getClient().newCall(request).execute()) {
             if (response.isSuccessful()) {
+                logger.info("Successfully fetched from " + endpoint);
                 return gson.fromJson(response.body().string(), clazz);
             }
             else {
