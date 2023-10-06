@@ -34,6 +34,8 @@ public class ZipService {
             .getenv("SUBMISSION_ATTACHMENTS_BUCKET_NAME");
     //regex for any special character that are not allowed in window os : <, >, ", /, \, |, ?, or *
     private static final String SPECIAL_CHARACTER_REGEX = "[<>\"\\/|?*\\\\]";
+
+    public static final Integer LONG_FILE_NAME_LENGTH = 50; //50 characters may be too strict but can revisit if required
     private static AmazonS3 s3Client;
 
     public static void createZip(final AmazonS3 client, final String filename, final String applicationId,
@@ -110,7 +112,11 @@ public class ZipService {
         final String fileExtension = "." + fileNameParts[fileNameParts.length - 1];
         final String filenameWithoutExtension = filenameWithoutFolderName.replace(fileExtension, "");
 
-        return filenameWithoutExtension.concat("_" + suffix + fileExtension);
+        // Need to trim very long file names to prevent max path length errors in windows
+        final String truncatedFileName = filenameWithoutExtension.length() > LONG_FILE_NAME_LENGTH ?
+                filenameWithoutExtension.substring(0, LONG_FILE_NAME_LENGTH).trim() : filenameWithoutExtension;
+
+        return truncatedFileName.concat("_" + suffix + fileExtension);
     }
 
     public static void deleteTmpDirContents() {
