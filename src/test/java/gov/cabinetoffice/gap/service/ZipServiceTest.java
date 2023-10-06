@@ -153,6 +153,17 @@ public class ZipServiceTest {
         assertEquals("_test... _File {{{}}} Name.___FLL. odt.________odt_1.xls", result);
     }
 
+    @Test
+    void shouldTruncateLongFileNames() {
+        final String folder = "330/submission/folder/";
+        final String longFileName = "202303 [DRAFT] - Open Networks Ecosystem competition - Grant Funding Agreement.docx-EmbeddedFile.xlsx";
+        final String truncatedLongFileName = longFileName.substring(0, ZipService.LONG_FILE_NAME_LENGTH).trim();
+
+        final String result = ZipService.parseFileName(folder + longFileName, 1, "330","submission");
+
+        assertEquals(truncatedLongFileName + "_1.xlsx", result);
+    }
+
     private File unzipFile(final ZipInputStream zis, final String filePath) throws Exception {
         final byte[] buffer = new byte[1024];
         final File unzippedFile = new File(filePath);
