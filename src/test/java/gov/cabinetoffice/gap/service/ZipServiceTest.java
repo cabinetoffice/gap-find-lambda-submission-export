@@ -138,7 +138,7 @@ public class ZipServiceTest {
         final List<String> result = ZipService.getSubmissionAttachmentFileNames(s3client, "testApplicationId", "testSubmissionId");
 
         assertEquals(1, result.size());
-        assertEquals("/some/random/prefix/hello-world2.txt", result.get(0));
+        assertEquals("some/random/prefix/hello-world2.txt", result.get(0));
     }
 
     @Test
