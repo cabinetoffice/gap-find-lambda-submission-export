@@ -142,15 +142,37 @@ public class ZipServiceTest {
     }
 
     @Test
-    void shouldReturnLastPartOfSubStringWhenFileNameIsParsed() {
+    void shouldHandleMultiplePeriodsInFilename() {
+        String result = ZipService.parseFileName("330/submission/folder/file.odt.w..pdf", 1, "330","submission");
 
-        String result = ZipService.parseFileName("s3://gap-attachments" +
-                "/13" +
-                "/035f31f6-2877-4f87-8a9b-32649a527668" +
-                "/9d4a3ed6-5a26-4d02-be49-bab13c11a2bf" +
-                "/test File Name.odt", 1);
+        assertEquals("file.odt.w._1.pdf", result);
+    }
+    @Test
+    void shouldHandleFileNameThatAreNotInTheRegex() {
+        String result = ZipService.parseFileName("330/submission/folder/file.word", 1, "330","submission");
 
-        assertEquals("test File Name_1.odt", result);
+        assertEquals("file_1.word", result);
+    }
+
+    @Test
+    void shouldHandleFileNameThatAreNotInTheRegexWithMoreDots() {
+        String result = ZipService.parseFileName("330/submission/folder/file.a.b.c.d.word", 1, "330","submission");
+
+        assertEquals("file.a.b.c.d_1.word", result);
+    }
+
+    @Test
+    void shouldReturnFileNameWithSuffix() {
+        String result = ZipService.parseFileName("330/submission/folder/file.pdf", 1, "330","submission");
+
+        assertEquals("file_1.pdf", result);
+    }
+
+    @Test
+    void shouldReturnFileNameWithSuffixWhenFileNameHasLoadsOfSpecialCharacter() {
+        String result = ZipService.parseFileName("330/submission/folder//test... /File {{{}}} Name.???FLL. odt.<>\"/\\|?*"+ "odt.xls", 1, "330","submission");
+
+        assertEquals("_test... _File {{{}}} Name.___FLL. odt.________odt_1.xls", result);
     }
 
     private File unzipFile(final ZipInputStream zis, final String filePath) throws Exception {
