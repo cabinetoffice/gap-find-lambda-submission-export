@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.cabinetoffice.gap.model.Submission;
 import gov.cabinetoffice.gap.model.SubmissionSection;
+import okhttp3.OkHttpClient;
 
 import java.util.List;
 
@@ -22,10 +23,10 @@ public class SubmissionService {
 
     }
 
-    public static Submission getSubmissionData(String batchId, String submissionId) throws Exception {
+    public static Submission getSubmissionData(OkHttpClient restClient, String batchId, String submissionId) throws Exception {
 
         String getEndpoint = "/submissions/" + submissionId + "/export-batch/" + batchId + "/submission";
 
-        return RestService.sendGetRequest(null, getEndpoint, Submission.class);
+        return RestService.sendGetRequest(restClient, null, getEndpoint, Submission.class);
     }
 }
