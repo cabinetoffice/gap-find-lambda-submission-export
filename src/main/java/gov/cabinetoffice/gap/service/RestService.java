@@ -26,7 +26,7 @@ public class RestService {
 
     private static final String ADMIN_API_SECRET = System.getenv("ADMIN_API_SECRET");
 
-    public static <T> T sendGetRequest(Map<String, String> params, String endpoint, Class<T> clazz) throws Exception {
+    public static <T> T sendGetRequest(OkHttpClient restClient, Map<String, String> params, String endpoint, Class<T> clazz) throws Exception {
 
         HttpUrl.Builder httpBuilder = HttpUrl.get(BACKEND_API_URL + endpoint).newBuilder();
         if (params != null) {
@@ -37,7 +37,7 @@ public class RestService {
 
         final Request request = defaultRequestBuilder().url(httpBuilder.build()).build();
 
-        try (Response response = getClient().newCall(request).execute()) {
+        try (Response response = restClient.newCall(request).execute()) {
             if (response.isSuccessful()) {
                 logger.info("Successfully fetched from " + endpoint);
                 return gson.fromJson(response.body().string(), clazz);
@@ -48,24 +48,24 @@ public class RestService {
         }
     }
 
-    public static <T> void sendPostRequest(T requestBodyDTO, String endpoint) throws Exception {
+    public static <T> void sendPostRequest(OkHttpClient restClient, T requestBodyDTO, String endpoint) throws Exception {
 
         final RequestBody body = RequestBody.create(gson.toJson(requestBodyDTO), JSON);
 
-        executePost(body, endpoint);
+        executePost(restClient, body, endpoint);
     }
 
-    public static void sendPostRequest(String body, String endpoint) throws Exception {
+    public static void sendPostRequest(OkHttpClient restClient, String body, String endpoint) throws Exception {
 
         final RequestBody requestBody = RequestBody.create(body, JSON);
 
-        executePost(requestBody, endpoint);
+        executePost(restClient, requestBody, endpoint);
     }
 
-    public static void executePost(RequestBody body, String endpoint) throws Exception {
+    public static void executePost(OkHttpClient restClient, RequestBody body, String endpoint) throws Exception {
         final Request request = defaultRequestBuilder().url(BACKEND_API_URL + endpoint).post(body).build();
 
-        try (Response response = getClient().newCall(request).execute()) {
+        try (Response response = restClient.newCall(request).execute()) {
             if (response.isSuccessful()) {
                 logger.info("Successfully posted to " + endpoint);
             }
@@ -75,13 +75,13 @@ public class RestService {
         }
     }
 
-    public static <T> void sendPatchRequest(T requestBodyDTO, String endpoint) throws Exception {
+    public static <T> void sendPatchRequest(OkHttpClient restClient, T requestBodyDTO, String endpoint) throws Exception {
 
         final RequestBody body = RequestBody.create(gson.toJson(requestBodyDTO), JSON);
 
         final Request request = defaultRequestBuilder().url(BACKEND_API_URL + endpoint).patch(body).build();
 
-        try (Response response = getClient().newCall(request).execute()) {
+        try (Response response = restClient.newCall(request).execute()) {
             if (response.isSuccessful()) {
                 logger.info("Successfully patched to " + endpoint);
             }
@@ -89,10 +89,6 @@ public class RestService {
                 throw new RuntimeException("Error occured while patching to " + endpoint);
             }
         }
-    }
-
-    public static OkHttpClient getClient() {
-        return new OkHttpClient();
     }
 
     /**

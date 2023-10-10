@@ -27,7 +27,7 @@ import static org.mockito.Mockito.*;
 
 public class HandlerTest {
 
-    private static AmazonS3 client;
+    private static AmazonS3 s3client;
     private static MockedStatic<AmazonS3ClientBuilder> mockedS3Builder;
     private static MockedStatic<HelperUtils> mockedHelperUtils;
     private static MockedStatic<S3Service> mockedS3Service;
@@ -40,9 +40,9 @@ public class HandlerTest {
 
     @BeforeAll
     static void beforeAll() {
-        client = mock(AmazonS3.class);
+        s3client = mock(AmazonS3.class);
         mockedS3Builder = mockStatic(AmazonS3ClientBuilder.class);
-        mockedS3Builder.when(AmazonS3ClientBuilder::defaultClient).thenReturn(client);
+        mockedS3Builder.when(AmazonS3ClientBuilder::defaultClient).thenReturn(s3client);
         mockedHelperUtils = mockStatic(HelperUtils.class);
         mockedS3Service = mockStatic(S3Service.class);
         mockedExportService = mockStatic(ExportRecordService.class);
@@ -73,14 +73,14 @@ public class HandlerTest {
 
         final String expectedFilename = "test_org_name_GAP_LL_20220927_00001";
 
-        mockedSubmissionService.when(() -> SubmissionService.getSubmissionData(exportBatchId, submissionId))
+        mockedSubmissionService.when(() -> SubmissionService.getSubmissionData(any(), anyString(), anyString()))
                 .thenReturn(SUBMISSION_WITH_ESSENTIAL_SECTION);
 
         mockedHelperUtils
                 .when(() -> HelperUtils.generateFilename("test org name", SUBMISSION_WITH_ESSENTIAL_SECTION.getGapId()))
                 .thenCallRealMethod();
 
-        when(client.putObject(anyString(), anyString(), any(File.class))).thenReturn(new PutObjectResult());
+        when(s3client.putObject(anyString(), anyString(), any(File.class))).thenReturn(new PutObjectResult());
 
         mockedS3Service.when(() -> S3Service.generateExportDocSignedUrl(any(), anyString()))
                 .thenReturn("mock-signed-url/mock-file");
@@ -88,7 +88,7 @@ public class HandlerTest {
         mockedHelperUtils.when(() -> HelperUtils.getRedirectUrl(SCHEME_ID, exportBatchId))
                 .thenReturn("test.co.uk/testing");
 
-        mockedExportService.when(() -> ExportRecordService.getOutstandingExportsCount(exportBatchId)).thenReturn(0L);
+        mockedExportService.when(() -> ExportRecordService.getOutstandingExportsCount(any(), eq(exportBatchId))).thenReturn(0L);
 
         try (final MockedStatic<OdtService> mockedOdtService = mockStatic(OdtService.class);
                 final MockedStatic<ZipService> mockedZipService = mockStatic(ZipService.class);
@@ -106,38 +106,38 @@ public class HandlerTest {
             assertEquals(new SQSBatchResponse(), response);
 
             // STEP 0
-            mockedExportService.verify(() -> ExportRecordService.updateExportRecordStatus(exportBatchId, submissionId,
-                    GrantExportStatus.PROCESSING));
+            mockedExportService.verify(() -> ExportRecordService.updateExportRecordStatus(any(), eq(exportBatchId), eq(submissionId),
+                    eq(GrantExportStatus.PROCESSING)));
 
             // STEP 1
-            mockedSubmissionService.verify(() -> SubmissionService.getSubmissionData(exportBatchId, submissionId));
+            mockedSubmissionService.verify(() -> SubmissionService.getSubmissionData(any(), eq(exportBatchId), eq(submissionId)));
 
             // STEP 2
             mockedOdtService
                     .verify(() -> OdtService.generateSingleOdt(SUBMISSION_WITH_ESSENTIAL_SECTION, expectedFilename));
 
             // STEP 3
-            mockedZipService.verify(() -> ZipService.createZip(client, expectedFilename, applicationId, submissionId));
+            mockedZipService.verify(() -> ZipService.createZip(s3client, expectedFilename, applicationId, submissionId));
 
             // STEP 4
             mockedZipService.verify(() -> ZipService.uploadZip(SUBMISSION_WITH_ESSENTIAL_SECTION, expectedFilename));
 
             // STEP 5
-            mockedS3Service.verify(() -> S3Service.generateExportDocSignedUrl(client,
+            mockedS3Service.verify(() -> S3Service.generateExportDocSignedUrl(s3client,
                     SUBMISSION_WITH_ESSENTIAL_SECTION.getGapId() + "/mock_filename.zip"));
 
             // STEP 6
-            mockedExportService.verify(() -> ExportRecordService.addSignedUrlToExportRecord(exportBatchId, submissionId,
-                    "mock-signed-url/mock-file"));
+            mockedExportService.verify(() -> ExportRecordService.addSignedUrlToExportRecord(any(), eq(exportBatchId), eq(submissionId),
+                    eq("mock-signed-url/mock-file")));
 
             // STEP 7
-            mockedExportService.verify(() -> ExportRecordService.updateExportRecordStatus(exportBatchId, submissionId,
-                    GrantExportStatus.COMPLETE));
+            mockedExportService.verify(() -> ExportRecordService.updateExportRecordStatus(any(), eq(exportBatchId), eq(submissionId),
+                    eq(GrantExportStatus.COMPLETE)));
 
             // STEP 8
-            mockedExportService.verify(() -> ExportRecordService.getOutstandingExportsCount(exportBatchId));
-            mockedNotifyService.verify(() -> NotifyService.sendConfirmationEmail(emailAddress, exportBatchId,
-                    SUBMISSION_WITH_ESSENTIAL_SECTION.getSchemeId(), submissionId));
+            mockedExportService.verify(() -> ExportRecordService.getOutstandingExportsCount(any(), eq(exportBatchId)));
+            mockedNotifyService.verify(() -> NotifyService.sendConfirmationEmail(any(), eq(emailAddress), eq(exportBatchId),
+                    eq(SUBMISSION_WITH_ESSENTIAL_SECTION.getSchemeId()), eq(submissionId)));
         }
     }
 
@@ -150,16 +150,16 @@ public class HandlerTest {
         final String exportBatchId = event.getRecords().get(0).getMessageAttributes().get("exportBatchId")
                 .getStringValue();
 
-        when(client.putObject(anyString(), anyString(), any(File.class))).thenReturn(new PutObjectResult());
+        when(s3client.putObject(anyString(), anyString(), any(File.class))).thenReturn(new PutObjectResult());
 
-        mockedSubmissionService.when(() -> SubmissionService.getSubmissionData(exportBatchId, submissionId))
+        mockedSubmissionService.when(() -> SubmissionService.getSubmissionData(any(), eq(exportBatchId), eq(submissionId)))
                 .thenReturn(SUBMISSION_WITH_ESSENTIAL_SECTION);
 
         mockedHelperUtils
                 .when(() -> HelperUtils.generateFilename("test org name", SUBMISSION_WITH_ESSENTIAL_SECTION.getGapId()))
                 .thenCallRealMethod();
 
-        when(client.putObject(anyString(), anyString(), any(File.class))).thenReturn(new PutObjectResult());
+        when(s3client.putObject(anyString(), anyString(), any(File.class))).thenReturn(new PutObjectResult());
 
         mockedS3Service.when(() -> S3Service.generateExportDocSignedUrl(any(), anyString()))
                 .thenReturn("mock-signed-url/mock-file");
@@ -167,7 +167,7 @@ public class HandlerTest {
         mockedHelperUtils.when(() -> HelperUtils.getRedirectUrl(SCHEME_ID, exportBatchId))
                 .thenReturn("test.co.uk/testing");
 
-        mockedExportService.when(() -> ExportRecordService.getOutstandingExportsCount(exportBatchId)).thenReturn(10L);
+        mockedExportService.when(() -> ExportRecordService.getOutstandingExportsCount(any(), eq(exportBatchId))).thenReturn(10L);
 
         try (final MockedStatic<OdtService> ignored = mockStatic(OdtService.class);
              final MockedStatic<ZipService> mockedZipService = mockStatic(ZipService.class);
@@ -183,7 +183,7 @@ public class HandlerTest {
             handler.handleRequest(event, contextMock);
 
             mockedNotifyService.verify(
-                    () -> NotifyService.sendConfirmationEmail(anyString(), anyString(), anyString(), anyString()),
+                    () -> NotifyService.sendConfirmationEmail(any(), anyString(), anyString(), anyString(), anyString()),
                     never());
 
         }
