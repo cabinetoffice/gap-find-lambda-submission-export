@@ -49,11 +49,10 @@ public class RestServiceTest {
             try (MockedStatic<RestService> mockedRestService = mockStatic(RestService.class)) {
 
                 mockedRestService.when(() -> RestService.defaultRequestBuilder()).thenCallRealMethod();
-                mockedRestService.when(RestService::getClient).thenReturn(mockedHttpClient);
-                mockedRestService.when(() -> RestService.sendGetRequest(any(), anyString(), any()))
+                mockedRestService.when(() -> RestService.sendGetRequest(any(), any(), anyString(), any()))
                         .thenCallRealMethod();
 
-                OutstandingExportCountDTO response = RestService.sendGetRequest(null, "/test/url",
+                OutstandingExportCountDTO response = RestService.sendGetRequest(mockedHttpClient,null, "/test/url",
                         OutstandingExportCountDTO.class);
 
                 verify(mockedHttpClient).newCall(httpRequestCaptor.capture());
@@ -84,13 +83,12 @@ public class RestServiceTest {
             try (MockedStatic<RestService> mockedRestService = mockStatic(RestService.class)) {
 
                 mockedRestService.when(() -> RestService.defaultRequestBuilder()).thenCallRealMethod();
-                mockedRestService.when(RestService::getClient).thenReturn(mockedHttpClient);
-                mockedRestService.when(() -> RestService.sendGetRequest(anyMap(), anyString(), any()))
+                mockedRestService.when(() -> RestService.sendGetRequest(any(), anyMap(), anyString(), any()))
                         .thenCallRealMethod();
 
                 Map<String, String> params = Map.of("newParam", "paramValue");
 
-                OutstandingExportCountDTO response = RestService.sendGetRequest(params, "/test/url",
+                OutstandingExportCountDTO response = RestService.sendGetRequest(mockedHttpClient, params, "/test/url",
                         OutstandingExportCountDTO.class);
 
                 verify(mockedHttpClient).newCall(httpRequestCaptor.capture());
@@ -120,12 +118,11 @@ public class RestServiceTest {
             try (MockedStatic<RestService> mockedRestService = mockStatic(RestService.class)) {
 
                 mockedRestService.when(() -> RestService.defaultRequestBuilder()).thenCallRealMethod();
-                mockedRestService.when(RestService::getClient).thenReturn(mockedHttpClient);
-                mockedRestService.when(() -> RestService.sendGetRequest(any(), anyString(), any()))
+                mockedRestService.when(() -> RestService.sendGetRequest(any(), any(), anyString(), any()))
                         .thenCallRealMethod();
 
                 assertThrows(RuntimeException.class,
-                        () -> RestService.sendGetRequest(null, "/test/url", OutstandingExportCountDTO.class));
+                        () -> RestService.sendGetRequest(mockedHttpClient, null, "/test/url", OutstandingExportCountDTO.class));
             }
         }
 
@@ -147,13 +144,12 @@ public class RestServiceTest {
                 OutstandingExportCountDTO bodyDTO = new OutstandingExportCountDTO(1l);
 
                 mockedRestService.when(() -> RestService.defaultRequestBuilder()).thenCallRealMethod();
-                mockedRestService.when(() -> RestService.executePost(any(), anyString())).thenCallRealMethod();
-                mockedRestService.when(RestService::getClient).thenReturn(mockedHttpClient);
+                mockedRestService.when(() -> RestService.executePost(any(), any(), anyString())).thenCallRealMethod();
                 mockedRestService
-                        .when(() -> RestService.sendPostRequest(any(OutstandingExportCountDTO.class), anyString()))
+                        .when(() -> RestService.sendPostRequest(any(), any(OutstandingExportCountDTO.class), anyString()))
                         .thenCallRealMethod();
 
-                RestService.sendPostRequest(bodyDTO, "/test/url");
+                RestService.sendPostRequest(mockedHttpClient, bodyDTO, "/test/url");
 
                 verify(mockedHttpClient).newCall(httpRequestCaptor.capture());
                 Request capturedRequest = httpRequestCaptor.getValue();
@@ -179,11 +175,10 @@ public class RestServiceTest {
             try (MockedStatic<RestService> mockedRestService = mockStatic(RestService.class)) {
 
                 mockedRestService.when(() -> RestService.defaultRequestBuilder()).thenCallRealMethod();
-                mockedRestService.when(() -> RestService.executePost(any(), anyString())).thenCallRealMethod();
-                mockedRestService.when(RestService::getClient).thenReturn(mockedHttpClient);
-                mockedRestService.when(() -> RestService.sendPostRequest(any(), anyString())).thenCallRealMethod();
+                mockedRestService.when(() -> RestService.executePost(any(), any(), anyString())).thenCallRealMethod();
+                mockedRestService.when(() -> RestService.sendPostRequest(any(), any(), anyString())).thenCallRealMethod();
 
-                RestService.sendPostRequest("MockBodyValue", "/test/url");
+                RestService.sendPostRequest(mockedHttpClient, "MockBodyValue", "/test/url");
 
                 verify(mockedHttpClient).newCall(httpRequestCaptor.capture());
                 Request capturedRequest = httpRequestCaptor.getValue();
@@ -209,11 +204,10 @@ public class RestServiceTest {
             try (MockedStatic<RestService> mockedRestService = mockStatic(RestService.class)) {
 
                 mockedRestService.when(() -> RestService.defaultRequestBuilder()).thenCallRealMethod();
-                mockedRestService.when(() -> RestService.executePost(any(), anyString())).thenCallRealMethod();
-                mockedRestService.when(RestService::getClient).thenReturn(mockedHttpClient);
-                mockedRestService.when(() -> RestService.sendPostRequest(any(), anyString())).thenCallRealMethod();
+                mockedRestService.when(() -> RestService.executePost(any(), any(), anyString())).thenCallRealMethod();
+                mockedRestService.when(() -> RestService.sendPostRequest(any(), any(), anyString())).thenCallRealMethod();
 
-                assertThrows(RuntimeException.class, () -> RestService.sendPostRequest("MockBodyValue", "/test/url"));
+                assertThrows(RuntimeException.class, () -> RestService.sendPostRequest(mockedHttpClient, "MockBodyValue", "/test/url"));
 
             }
         }
@@ -237,10 +231,9 @@ public class RestServiceTest {
                 OutstandingExportCountDTO bodyDTO = new OutstandingExportCountDTO(1l);
 
                 mockedRestService.when(() -> RestService.defaultRequestBuilder()).thenCallRealMethod();
-                mockedRestService.when(RestService::getClient).thenReturn(mockedHttpClient);
-                mockedRestService.when(() -> RestService.sendPatchRequest(any(), anyString())).thenCallRealMethod();
+                mockedRestService.when(() -> RestService.sendPatchRequest(any(), any(), anyString())).thenCallRealMethod();
 
-                RestService.sendPatchRequest(bodyDTO, "/test/url");
+                RestService.sendPatchRequest(mockedHttpClient, bodyDTO, "/test/url");
 
                 verify(mockedHttpClient).newCall(httpRequestCaptor.capture());
                 Request capturedRequest = httpRequestCaptor.getValue();
@@ -267,10 +260,9 @@ public class RestServiceTest {
                 OutstandingExportCountDTO bodyDTO = new OutstandingExportCountDTO(1l);
 
                 mockedRestService.when(() -> RestService.defaultRequestBuilder()).thenCallRealMethod();
-                mockedRestService.when(RestService::getClient).thenReturn(mockedHttpClient);
-                mockedRestService.when(() -> RestService.sendPatchRequest(any(), anyString())).thenCallRealMethod();
+                mockedRestService.when(() -> RestService.sendPatchRequest(any(), any(), anyString())).thenCallRealMethod();
 
-                assertThrows(RuntimeException.class, () -> RestService.sendPatchRequest(bodyDTO, "/test/url"));
+                assertThrows(RuntimeException.class, () -> RestService.sendPatchRequest(mockedHttpClient, bodyDTO, "/test/url"));
             }
         }
 

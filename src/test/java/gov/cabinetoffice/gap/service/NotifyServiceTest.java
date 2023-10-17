@@ -2,6 +2,8 @@ package gov.cabinetoffice.gap.service;
 
 import gov.cabinetoffice.gap.model.SendLambdaExportEmailDTO;
 import gov.cabinetoffice.gap.utils.HelperUtils;
+import okhttp3.OkHttpClient;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -13,9 +15,17 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.*;
 
 public class NotifyServiceTest {
+
+    private static final OkHttpClient mockedHttpClient = mock(OkHttpClient.class);
+
+
+    @BeforeEach
+    void beforeEach() {
+        reset(mockedHttpClient);
+    }
 
     @Nested
     class sendConfirmationEmail {
@@ -37,13 +47,13 @@ public class NotifyServiceTest {
 
                 mockedHelperUtils.when(() -> HelperUtils.getRedirectUrl(mockSchemeId, mockBatchId.toString()))
                         .thenReturn(mockRedirectUrl);
-                mockedRestService.when(() -> RestService.sendPostRequest(any(), anyString())).thenAnswer(i -> null);
+                mockedRestService.when(() -> RestService.sendPostRequest(any(), any(), anyString())).thenAnswer(i -> null);
 
-                NotifyService.sendConfirmationEmail(mockEmail, mockBatchId.toString(), mockSchemeId,
+                NotifyService.sendConfirmationEmail(mockedHttpClient, mockEmail, mockBatchId.toString(), mockSchemeId,
                         mockSubmissionId.toString());
 
                 mockedHelperUtils.verify(() -> HelperUtils.getRedirectUrl(mockSchemeId, mockBatchId.toString()));
-                mockedRestService.verify(() -> RestService.sendPostRequest(sendEmailDTOCaptor.capture(), anyString()));
+                mockedRestService.verify(() -> RestService.sendPostRequest(any(), sendEmailDTOCaptor.capture(), anyString()));
 
                 SendLambdaExportEmailDTO capturedDTO = sendEmailDTOCaptor.getValue();
 
@@ -70,10 +80,10 @@ public class NotifyServiceTest {
                 mockedHelperUtils.when(() -> HelperUtils.getRedirectUrl(mockSchemeId, mockBatchId.toString()))
                         .thenReturn(mockRedirectUrl);
                 mockedRestService
-                        .when(() -> RestService.sendPostRequest(any(SendLambdaExportEmailDTO.class), anyString()))
+                        .when(() -> RestService.sendPostRequest(any(), any(SendLambdaExportEmailDTO.class), anyString()))
                         .thenThrow(new RuntimeException());
 
-                assertThrows(RuntimeException.class, () -> NotifyService.sendConfirmationEmail(mockEmail, mockBatchId,
+                assertThrows(RuntimeException.class, () -> NotifyService.sendConfirmationEmail(mockedHttpClient, mockEmail, mockBatchId,
                         mockSchemeId, mockSubmissionId));
 
             }
