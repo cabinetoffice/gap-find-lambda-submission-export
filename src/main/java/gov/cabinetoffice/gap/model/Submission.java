@@ -9,7 +9,6 @@ import lombok.NoArgsConstructor;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
-import java.util.UUID;
 
 @Data
 @NoArgsConstructor
@@ -25,6 +24,7 @@ public class Submission {
     private Instant submittedDate;
     private List<SubmissionSection> sections;
     private String email;
+    private Integer schemeVersion;
 
     public SubmissionSection getSectionById(String sectionId) {
         return this.sections.stream().filter(section -> Objects.equals(section.getSectionId(), sectionId)).findFirst()
