@@ -31,4 +31,12 @@ public class Submission {
                 .orElseThrow(() -> new RuntimeException("Section with id " + sectionId + " does not exist"));
     }
 
+    public SubmissionQuestion getQuestionById(String sectionId, String questionId) {
+        return this.getSectionById(sectionId)
+                .getQuestions()
+                .stream().filter(question -> question.getQuestionId().equals(questionId))
+                .findAny()
+                .orElseThrow(() -> new RuntimeException("Question with id " + questionId + " does not exist"));
+    }
+
 }

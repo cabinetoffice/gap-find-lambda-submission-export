@@ -37,20 +37,12 @@ public class OdtService {
             String largeHeadingStyle = "Heading_20_2";
             String smallHeadingStyle = "Heading_20_10";
             DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy").withZone(ZoneId.of("GMT"));
-            SubmissionSection essentialSection = null;
-            SubmissionSection organisationDetailsSection = null;
-            SubmissionSection fundingDetailsSection = null;
-            String fundingAmount;
+            final String fundingSectionName = schemeVersion == 1 ? ESSENTIAL_SECTION_ID : FUNDING_DETAILS_SECTION_ID;
+            final String requiredCheckSectionName = schemeVersion == 1 ? ESSENTIAL_SECTION_ID : ORGANISATION_DETAILS_SECTION_ID;
 
             SubmissionSection eligibilitySection = submission.getSectionById(ELIGIBILITY_SECTION_ID);
-            if (schemeVersion == 1) {
-                essentialSection = submission.getSectionById(ESSENTIAL_SECTION_ID);
-                fundingAmount = essentialSection.getQuestionById("APPLICANT_AMOUNT").getResponse();
-            } else {
-                organisationDetailsSection = submission.getSectionById(ORGANISATION_DETAILS_SECTION_ID);
-                fundingDetailsSection = submission.getSectionById(FUNDING_DETAILS_SECTION_ID);
-                fundingAmount = fundingDetailsSection.getQuestionById("APPLICANT_AMOUNT").getResponse();
-            }
+            final SubmissionSection requiredCheckSection = submission.getSectionById(requiredCheckSectionName);
+
 
             OdfTextParagraph sectionBreak = new OdfTextParagraph(contentDom);
             sectionBreak.addContentWhitespace("\n\n");
@@ -67,7 +59,7 @@ public class OdtService {
             mainHeading.addStyledContentWhitespace(smallHeadingStyle, "Submitted date: " +
                     dateTimeFormatter.format(submission.getSubmittedDate()) + "\n\n");
             mainHeading.addStyledContentWhitespace(smallHeadingStyle, "Amount applied for: £" +
-                    fundingAmount);
+                    submission.getQuestionById(fundingSectionName, "APPLICANT_AMOUNT").getResponse());
             documentText.appendChild(mainHeading);
 
             // ELIGIBILITY SECTION
@@ -88,25 +80,22 @@ public class OdtService {
 
             // ESSENTIAL SECTION or ORGANISATION_DETAILS/FUNDING_DETAILS SECTION based on scheme version
 
-            OdfTextHeading notCustomSectionHeading = new OdfTextHeading(contentDom);
+            OdfTextHeading requiredCheckHeading = new OdfTextHeading(contentDom);
             OdfTextParagraph locationQuestion = new OdfTextParagraph(contentDom);
             OdfTextParagraph locationResponse = new OdfTextParagraph(contentDom);
 
             documentText.appendChild(sectionBreak.cloneElement());
-
-            notCustomSectionHeading.addStyledContent(largeHeadingStyle, "Section 2 - " +
+            requiredCheckHeading.addStyledContent(largeHeadingStyle, "Section 2 - " +
                     "Required checks");
-            documentText.appendChild(notCustomSectionHeading);
+            documentText.appendChild(requiredCheckHeading);
             documentText.appendChild(new OdfTextParagraph(contentDom).addContentWhitespace(""));
 
-            final TableTableElement tableElement = schemeVersion == 1 ? generateEssentialTable(documentText, essentialSection, submission.getEmail()) : generateEssentialTable(documentText, organisationDetailsSection, submission.getEmail());
-            documentText.appendChild(tableElement);
+            documentText.appendChild(generateEssentialTable(documentText, requiredCheckSection, submission.getEmail()));
 
             locationQuestion.addStyledContent(smallHeadingStyle, "Where this funding will be spent");
-            final SubmissionSection locationSection = schemeVersion == 1 ? essentialSection : fundingDetailsSection;
 
             locationResponse.addContentWhitespace(String.join(",\n",
-                    locationSection.getQuestionById("BENEFITIARY_LOCATION").getMultiResponse()));
+                    submission.getQuestionById(fundingSectionName, "BENEFITIARY_LOCATION").getMultiResponse()));
 
             documentText.appendChild(locationQuestion);
             documentText.appendChild(locationResponse);
