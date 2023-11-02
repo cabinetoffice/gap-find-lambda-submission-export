@@ -40,13 +40,11 @@ public class OdtService {
             final String fundingSectionName = schemeVersion == 1 ? ESSENTIAL_SECTION_ID : FUNDING_DETAILS_SECTION_ID;
             final String requiredCheckSectionName = schemeVersion == 1 ? ESSENTIAL_SECTION_ID : ORGANISATION_DETAILS_SECTION_ID;
 
-            SubmissionSection eligibilitySection = submission.getSectionById(ELIGIBILITY_SECTION_ID);
+            final SubmissionSection eligibilitySection = submission.getSectionById(ELIGIBILITY_SECTION_ID);
             final SubmissionSection requiredCheckSection = submission.getSectionById(requiredCheckSectionName);
-
 
             OdfTextParagraph sectionBreak = new OdfTextParagraph(contentDom);
             sectionBreak.addContentWhitespace("\n\n");
-
 
             // Add top-level submission info
             OdfTextHeading mainHeading = new OdfTextHeading(contentDom);
