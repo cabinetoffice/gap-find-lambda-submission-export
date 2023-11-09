@@ -8,7 +8,12 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import gov.cabinetoffice.gap.enums.GrantExportStatus;
 import gov.cabinetoffice.gap.model.Submission;
-import gov.cabinetoffice.gap.service.*;
+import gov.cabinetoffice.gap.service.ExportRecordService;
+import gov.cabinetoffice.gap.service.NotifyService;
+import gov.cabinetoffice.gap.service.OdtService;
+import gov.cabinetoffice.gap.service.S3Service;
+import gov.cabinetoffice.gap.service.SubmissionService;
+import gov.cabinetoffice.gap.service.ZipService;
 import gov.cabinetoffice.gap.utils.HelperUtils;
 import okhttp3.OkHttpClient;
 import org.slf4j.Logger;
@@ -41,7 +46,11 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
             // STEP 1 - get submission from database
             // legal name is assigned from the response they give in the essential questions section
             final Submission submission = SubmissionService.getSubmissionData(restClient, exportBatchId, submissionId);
-            String legalName = submission.getSectionById("ESSENTIAL").getQuestionById("APPLICANT_ORG_NAME").getResponse();
+            String legalName = submission.getSchemeVersion() == 1 ?
+                    submission.getSectionById("ESSENTIAL").getQuestionById("APPLICANT_ORG_NAME").getResponse()
+                    :
+                    submission.getSectionById("ORGANISATION_DETAILS").getQuestionById("APPLICANT_ORG_NAME").getResponse();
+
             submission.setLegalName(legalName);
 
             // STEP 2 - generate .odt from submission
@@ -70,8 +79,7 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
             if (Objects.equals(outstandingCount, 0L)) {
                 NotifyService.sendConfirmationEmail(restClient, emailAddress, exportBatchId, submission.getSchemeId(),
                         submissionId);
-            }
-            else {
+            } else {
                 logger.info(
                         String.format("Outstanding exports for export batch %s: %s", exportBatchId, outstandingCount));
             }
@@ -79,8 +87,7 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
             // STEP 9 - clear tmp dir as this is preserved between frequent invocations
             ZipService.deleteTmpDirContents();
             logger.info("Tmp dir cleared");
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             logger.error("Could not process message", e);
             throw new RuntimeException(e);
         }
