@@ -127,7 +127,7 @@ public class HandlerTest {
 
             // STEP 5
             mockedExportService.verify(() -> ExportRecordService.addS3ObjectKeyToExportRecord(any(), eq(exportBatchId), eq(submissionId),
-                    eq("mock-path/mock-file")));
+                    eq(expectedFilename)));
 
             // STEP 6
             mockedExportService.verify(() -> ExportRecordService.updateExportRecordStatus(any(), eq(exportBatchId), eq(submissionId),
