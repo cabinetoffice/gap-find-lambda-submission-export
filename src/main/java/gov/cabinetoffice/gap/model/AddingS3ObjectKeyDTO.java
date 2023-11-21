@@ -5,8 +5,8 @@ import lombok.Data;
 
 @Data
 @AllArgsConstructor
-public class AddingSignedUrlDTO {
+public class AddingS3ObjectKeyDTO {
 
-    private String signedUrl;
-
+    private String s3ObjectKey;
+    
 }

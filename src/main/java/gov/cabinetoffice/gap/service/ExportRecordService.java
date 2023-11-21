@@ -1,7 +1,7 @@
 package gov.cabinetoffice.gap.service;
 
 import gov.cabinetoffice.gap.enums.GrantExportStatus;
-import gov.cabinetoffice.gap.model.AddingSignedUrlDTO;
+import gov.cabinetoffice.gap.model.AddingS3ObjectKeyDTO;
 import gov.cabinetoffice.gap.model.OutstandingExportCountDTO;
 import okhttp3.OkHttpClient;
 
@@ -21,11 +21,11 @@ public class ExportRecordService {
         return RestService.sendGetRequest(restClient, null, getEndpoint, OutstandingExportCountDTO.class).getOutstandingCount();
     }
 
-    public static void addSignedUrlToExportRecord(OkHttpClient restClient, String exportId, String submissionId, String signedUrl)
+    public static void addS3ObjectKeyToExportRecord(OkHttpClient restClient, String exportId, String submissionId, String s3ObjectKey)
             throws Exception {
-        final String patchEndpoint = "/submissions/" + submissionId + "/export-batch/" + exportId + "/signedUrl";
+        final String patchEndpoint = "/submissions/" + submissionId + "/export-batch/" + exportId + "/s3-object-key";
 
-        RestService.sendPatchRequest(restClient, new AddingSignedUrlDTO(signedUrl), patchEndpoint);
+        RestService.sendPatchRequest(restClient, new AddingS3ObjectKeyDTO(s3ObjectKey), patchEndpoint);
     }
 
 }
