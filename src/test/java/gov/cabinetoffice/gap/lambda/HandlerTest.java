@@ -100,7 +100,7 @@ public class HandlerTest {
             mockedZipService.when(() -> ZipService.createZip(any(), anyString(), anyString(), anyString()))
                     .thenAnswer((Answer<Void>) invocation -> null);
 
-            final String mockS3Key = V1_SUBMISSION_WITH_ESSENTIAL_SECTION.getGapId() + '/mock_filename.zip';
+            final String mockS3Key = V1_SUBMISSION_WITH_ESSENTIAL_SECTION.getGapId() + "/mock_filename.zip";
 
             mockedZipService.when(() -> ZipService.uploadZip(eq(V1_SUBMISSION_WITH_ESSENTIAL_SECTION), any()))
                     .thenReturn(mockS3Key);
