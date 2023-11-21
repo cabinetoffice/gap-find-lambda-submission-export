@@ -100,8 +100,10 @@ public class HandlerTest {
             mockedZipService.when(() -> ZipService.createZip(any(), anyString(), anyString(), anyString()))
                     .thenAnswer((Answer<Void>) invocation -> null);
 
+            final String mockS3Key = V1_SUBMISSION_WITH_ESSENTIAL_SECTION.getGapId() + '/mock_filename.zip'
+
             mockedZipService.when(() -> ZipService.uploadZip(eq(V1_SUBMISSION_WITH_ESSENTIAL_SECTION), any()))
-                    .thenReturn(V1_SUBMISSION_WITH_ESSENTIAL_SECTION.getGapId() + "/mock_filename.zip");
+                    .thenReturn(mockS3Key);
 
             Handler handler = new Handler();
             SQSBatchResponse response = handler.handleRequest(event, contextMock);
@@ -127,7 +129,7 @@ public class HandlerTest {
 
             // STEP 5
             mockedExportService.verify(() -> ExportRecordService.addS3ObjectKeyToExportRecord(any(), eq(exportBatchId), eq(submissionId),
-                    eq(expectedFilename)));
+                    eq(mockS3Key)));
 
             // STEP 6
             mockedExportService.verify(() -> ExportRecordService.updateExportRecordStatus(any(), eq(exportBatchId), eq(submissionId),
