@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 @Data
 @NoArgsConstructor
@@ -22,8 +23,17 @@ public class SubmissionSection {
     private List<SubmissionQuestion> questions;
 
     public SubmissionQuestion getQuestionById(String questionId) {
-        return this.questions.stream().filter(question -> Objects.equals(question.getQuestionId(), questionId))
+        return this.questions
+                .stream()
+                .filter(question -> Objects.equals(question.getQuestionId(), questionId))
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("Question with id " + questionId + " does not exist"));
+    }
+
+    public Optional<SubmissionQuestion> mayGetQuestionById(String questionId) {
+        return this.questions
+                .stream()
+                .filter(question -> Objects.equals(question.getQuestionId(), questionId))
+                .findFirst();
     }
 }
