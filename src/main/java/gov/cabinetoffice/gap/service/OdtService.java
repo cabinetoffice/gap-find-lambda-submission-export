@@ -33,6 +33,7 @@ public class OdtService {
     private static final String APPLICANT_ORG_COMPANIES_HOUSE = "APPLICANT_ORG_COMPANIES_HOUSE";
     private static final String APPLICANT_AMOUNT = "APPLICANT_AMOUNT";
     private static final String BENEFITIARY_LOCATION = "BENEFITIARY_LOCATION";
+    private static final String APPLICANT_ORG_TYPE_INDIVIDUAL = "I am applying as an individual";
 
     OdtService() {
     }
@@ -52,7 +53,7 @@ public class OdtService {
             final SubmissionSection eligibilitySection = submission.getSectionById(ELIGIBILITY_SECTION_ID);
             final SubmissionSection requiredCheckSection = submission.getSectionById(requiredCheckSectionName);
             final String orgType = requiredCheckSection.getQuestionById(APPLICANT_TYPE).getResponse();
-            final Boolean isIndividual = Objects.equals(orgType, "I am applying as an individual");
+            final Boolean isIndividual = Objects.equals(orgType, APPLICANT_ORG_TYPE_INDIVIDUAL);
 
             OdfTextParagraph sectionBreak = new OdfTextParagraph(contentDom);
             sectionBreak.addContentWhitespace("\n\n");
@@ -194,7 +195,7 @@ public class OdtService {
         OdfTable odfTable = OdfTable.newTable(documentText, 7, 2);
 
         final String orgType = section.getQuestionById(APPLICANT_TYPE).getResponse();
-        final Boolean isIndividual = Objects.equals(orgType, "I am applying as an individual");
+        final Boolean isIndividual = Objects.equals(orgType, APPLICANT_ORG_TYPE_INDIVIDUAL);
 
         final String orgNameHeading = isIndividual ? "Applicant name" : "Legal name of organisation";
         odfTable.getRowByIndex(0).getCellByIndex(0).setStringValue(orgNameHeading);
