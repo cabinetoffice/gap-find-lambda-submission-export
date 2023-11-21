@@ -11,7 +11,6 @@ import gov.cabinetoffice.gap.enums.GrantExportStatus;
 import gov.cabinetoffice.gap.service.ExportRecordService;
 import gov.cabinetoffice.gap.service.NotifyService;
 import gov.cabinetoffice.gap.service.OdtService;
-import gov.cabinetoffice.gap.service.S3Service;
 import gov.cabinetoffice.gap.service.SubmissionService;
 import gov.cabinetoffice.gap.service.ZipService;
 import gov.cabinetoffice.gap.testData.TestContext;
@@ -40,7 +39,6 @@ public class HandlerTest {
     private static AmazonS3 s3client;
     private static MockedStatic<AmazonS3ClientBuilder> mockedS3Builder;
     private static MockedStatic<HelperUtils> mockedHelperUtils;
-    private static MockedStatic<S3Service> mockedS3Service;
     private static MockedStatic<ExportRecordService> mockedExportService;
     private static MockedStatic<SubmissionService> mockedSubmissionService;
 
@@ -50,7 +48,6 @@ public class HandlerTest {
         mockedS3Builder = mockStatic(AmazonS3ClientBuilder.class);
         mockedS3Builder.when(AmazonS3ClientBuilder::defaultClient).thenReturn(s3client);
         mockedHelperUtils = mockStatic(HelperUtils.class);
-        mockedS3Service = mockStatic(S3Service.class);
         mockedExportService = mockStatic(ExportRecordService.class);
         mockedSubmissionService = mockStatic(SubmissionService.class);
     }
@@ -59,7 +56,6 @@ public class HandlerTest {
     static void afterAll() {
         mockedS3Builder.close();
         mockedHelperUtils.close();
-        mockedS3Service.close();
         mockedExportService.close();
         mockedSubmissionService.close();
     }
@@ -91,9 +87,6 @@ public class HandlerTest {
                 .thenCallRealMethod();
 
         when(s3client.putObject(anyString(), anyString(), any(File.class))).thenReturn(new PutObjectResult());
-
-        mockedS3Service.when(() -> S3Service.generateExportDocSignedUrl(any(), anyString()))
-                .thenReturn("mock-signed-url/mock-file");
 
         mockedHelperUtils.when(() -> HelperUtils.getRedirectUrl(SCHEME_ID, exportBatchId))
                 .thenReturn("test.co.uk/testing");
@@ -133,18 +126,14 @@ public class HandlerTest {
             mockedZipService.verify(() -> ZipService.uploadZip(V1_SUBMISSION_WITH_ESSENTIAL_SECTION, expectedFilename));
 
             // STEP 5
-            mockedS3Service.verify(() -> S3Service.generateExportDocSignedUrl(s3client,
-                    V1_SUBMISSION_WITH_ESSENTIAL_SECTION.getGapId() + "/mock_filename.zip"));
+            mockedExportService.verify(() -> ExportRecordService.addS3ObjectKeyToExportRecord(any(), eq(exportBatchId), eq(submissionId),
+                    eq("mock-path/mock-file")));
 
             // STEP 6
-            mockedExportService.verify(() -> ExportRecordService.addSignedUrlToExportRecord(any(), eq(exportBatchId), eq(submissionId),
-                    eq("mock-signed-url/mock-file")));
-
-            // STEP 7
             mockedExportService.verify(() -> ExportRecordService.updateExportRecordStatus(any(), eq(exportBatchId), eq(submissionId),
                     eq(GrantExportStatus.COMPLETE)));
 
-            // STEP 8
+            // STEP 7
             mockedExportService.verify(() -> ExportRecordService.getOutstandingExportsCount(any(), eq(exportBatchId)));
             mockedNotifyService.verify(() -> NotifyService.sendConfirmationEmail(any(), eq(emailAddress), eq(exportBatchId),
                     eq(V1_SUBMISSION_WITH_ESSENTIAL_SECTION.getSchemeId()), eq(submissionId)));
@@ -170,9 +159,6 @@ public class HandlerTest {
                 .thenCallRealMethod();
 
         when(s3client.putObject(anyString(), anyString(), any(File.class))).thenReturn(new PutObjectResult());
-
-        mockedS3Service.when(() -> S3Service.generateExportDocSignedUrl(any(), anyString()))
-                .thenReturn("mock-signed-url/mock-file");
 
         mockedHelperUtils.when(() -> HelperUtils.getRedirectUrl(SCHEME_ID, exportBatchId))
                 .thenReturn("test.co.uk/testing");
