@@ -228,27 +228,39 @@ public class OdtService {
         odfTable.getRowByIndex(7).getCellByIndex(1)
                 .setStringValue(email);
 
-        odfTable.getRowByIndex(8)
-                .getCellByIndex(0)
-                .setStringValue("Charities Commission number if the organisation has one (if blank, number has not been entered)");
-        odfTable.getRowByIndex(8)
-                .getCellByIndex(1)
-                .setStringValue(section
-                        .mayGetQuestionById(APPLICANT_ORG_CHARITY_NUMBER)
-                        .map(SubmissionQuestion::getResponse)
-                        .orElse("")
-                );
+        Integer index = 8;
+        final Boolean hasCharityCommissionNumber = section
+                .mayGetQuestionById(APPLICANT_ORG_CHARITY_NUMBER)
+                .isPresent();
+        if (hasCharityCommissionNumber) {
+            odfTable.getRowByIndex(index)
+                    .getCellByIndex(0)
+                    .setStringValue("Charities Commission number if the organisation has one (if blank, number has not been entered)");
+            odfTable.getRowByIndex(index)
+                    .getCellByIndex(1)
+                    .setStringValue(section
+                            .mayGetQuestionById(APPLICANT_ORG_CHARITY_NUMBER)
+                            .map(SubmissionQuestion::getResponse)
+                            .orElse("")
+                    );
+            index++;
+        }
 
-        odfTable.getRowByIndex(9)
-                .getCellByIndex(0)
-                .setStringValue("Companies House number if the organisation has one (if blank, number has not been entered)");
-        odfTable.getRowByIndex(9)
-                .getCellByIndex(1)
-                .setStringValue(section
-                        .mayGetQuestionById(APPLICANT_ORG_COMPANIES_HOUSE)
-                        .map(SubmissionQuestion::getResponse)
-                        .orElse("")
-                );
+        final Boolean hasCompaniesHouseNumber = section
+                .mayGetQuestionById(APPLICANT_ORG_COMPANIES_HOUSE)
+                .isPresent();
+        if (hasCompaniesHouseNumber) {
+            odfTable.getRowByIndex(index)
+                    .getCellByIndex(0)
+                    .setStringValue("Companies House number if the organisation has one (if blank, number has not been entered)");
+            odfTable.getRowByIndex(index)
+                    .getCellByIndex(1)
+                    .setStringValue(section
+                            .mayGetQuestionById(APPLICANT_ORG_COMPANIES_HOUSE)
+                            .map(SubmissionQuestion::getResponse)
+                            .orElse("")
+                    );
+        }
 
         return odfTable.getOdfElement();
     }

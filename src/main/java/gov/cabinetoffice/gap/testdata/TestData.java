@@ -288,7 +288,7 @@ public class TestData {
             })
             .build();
 
-    public static final SubmissionQuestion V2_ORG_COMPANIES_NO_SUBMISSION_QUESTION = SubmissionQuestion.builder()
+    public static final SubmissionQuestion V2_ORG_COMPANIES_NO_SUBMISSION_QUESTION_WITH_RESPONSE = SubmissionQuestion.builder()
             .questionId("APPLICANT_ORG_COMPANIES_HOUSE")
             .profileField("ORG_COMPANIES_HOUSE")
             .fieldTitle("Please supply the Companies House number for your organisation - if applicable")
@@ -304,7 +304,23 @@ public class TestData {
             .response("V2_CHN")
             .build();
 
-    public static final SubmissionQuestion V2_ORG_CHARITY_NO_SUBMISSION_QUESTION = SubmissionQuestion.builder()
+    public static final SubmissionQuestion V2_ORG_COMPANIES_NO_SUBMISSION_QUESTION_WITHOUT_RESPONSE = SubmissionQuestion.builder()
+            .questionId("APPLICANT_ORG_COMPANIES_HOUSE")
+            .profileField("ORG_COMPANIES_HOUSE")
+            .fieldTitle("Please supply the Companies House number for your organisation - if applicable")
+            .hintText(
+                    "Funding organisation might use this to identify your organisation when you apply for a grant. It might also be used to check your organisation is legitimate.")
+            .responseType(ResponseTypeEnum.ShortAnswer)
+            .validation(
+                    SubmissionQuestionValidation
+                            .builder()
+                            .mandatory(true)
+                            .build()
+            )
+            .response("")
+            .build();
+
+    public static final SubmissionQuestion V2_ORG_CHARITY_NO_SUBMISSION_QUESTION_WITH_RESPONSE = SubmissionQuestion.builder()
             .questionId("APPLICANT_ORG_CHARITY_NUMBER")
             .profileField("ORG_CHARITY_COMMISSION_NUMBER")
             .fieldTitle("Please supply the Charity Commission number for your organisation - if applicable")
@@ -318,6 +334,22 @@ public class TestData {
                             .build()
             )
             .response("V2_12738494")
+            .build();
+
+    public static final SubmissionQuestion V2_ORG_CHARITY_NO_SUBMISSION_QUESTION_WITHOUT_RESPONSE = SubmissionQuestion.builder()
+            .questionId("APPLICANT_ORG_CHARITY_NUMBER")
+            .profileField("ORG_CHARITY_COMMISSION_NUMBER")
+            .fieldTitle("Please supply the Charity Commission number for your organisation - if applicable")
+            .hintText(
+                    "Funding organisation might use this to identify your organisation when you apply for a grant. It might also be used to check your organisation is legitimate.")
+            .responseType(ResponseTypeEnum.ShortAnswer)
+            .validation(
+                    SubmissionQuestionValidation
+                            .builder()
+                            .mandatory(true)
+                            .build()
+            )
+            .response("")
             .build();
 
     public static final SubmissionQuestion V2_ORG_BENEFICIARY_LOC_SUBMISSION_QUESTION = SubmissionQuestion.builder()
@@ -364,7 +396,7 @@ public class TestData {
             ))
             .build();
 
-    public static final SubmissionSection ORGANISATION_DETAILS_SECTION_SUBMISSION = SubmissionSection.builder()
+    public static final SubmissionSection ORGANISATION_DETAILS_SECTION_SUBMISSION_LIMITED_WITH_CC_AND_CH = SubmissionSection.builder()
             .sectionId("ORGANISATION_DETAILS")
             .sectionTitle("Your organisation")
             .sectionStatus(SubmissionSectionStatus.COMPLETED)
@@ -372,8 +404,21 @@ public class TestData {
                     V2_ORG_TYPE_SUBMISSION_QUESTION_LIMITED,
                     V2_ORG_NAME_SUBMISSION_QUESTION,
                     V2_ORG_ADDRESS_SUBMISSION_QUESTION,
-                    V2_ORG_COMPANIES_NO_SUBMISSION_QUESTION,
-                    V2_ORG_CHARITY_NO_SUBMISSION_QUESTION
+                    V2_ORG_COMPANIES_NO_SUBMISSION_QUESTION_WITH_RESPONSE,
+                    V2_ORG_CHARITY_NO_SUBMISSION_QUESTION_WITH_RESPONSE
+            ))
+            .build();
+
+    public static final SubmissionSection ORGANISATION_DETAILS_SECTION_SUBMISSION_LIMITED_WITHOUT_CC_AND_CH = SubmissionSection.builder()
+            .sectionId("ORGANISATION_DETAILS")
+            .sectionTitle("Your organisation")
+            .sectionStatus(SubmissionSectionStatus.COMPLETED)
+            .questions(Arrays.asList(
+                    V2_ORG_TYPE_SUBMISSION_QUESTION_LIMITED,
+                    V2_ORG_NAME_SUBMISSION_QUESTION,
+                    V2_ORG_ADDRESS_SUBMISSION_QUESTION,
+                    V2_ORG_COMPANIES_NO_SUBMISSION_QUESTION_WITHOUT_RESPONSE,
+                    V2_ORG_CHARITY_NO_SUBMISSION_QUESTION_WITHOUT_RESPONSE
             ))
             .build();
 
@@ -408,19 +453,35 @@ public class TestData {
             .questions(Arrays.asList(V2_ORG_AMOUNT_SUBMISSION_QUESTION, V2_ORG_BENEFICIARY_LOC_SUBMISSION_QUESTION))
             .build();
 
-    public static final List<SubmissionSection> V2_SUBMISSION_SECTIONS_LIST = Arrays.asList(
+    public static final List<SubmissionSection> V2_SUBMISSION_SECTIONS_LIST_LIMITED_WITH_CC_AND_CH = Arrays.asList(
             ELIGIBILITY_SECTION_SUBMISSION,
-            ORGANISATION_DETAILS_SECTION_SUBMISSION,
+            ORGANISATION_DETAILS_SECTION_SUBMISSION_LIMITED_WITH_CC_AND_CH,
             FUNDING_DETAILS_SECTION_SUBMISSION
     );
 
-    public static final Submission V2_SUBMISSION_LIMITED_COMPANY = Submission
+    public static final Submission V2_SUBMISSION_LIMITED_COMPANY_WITH_CC_AND_CH = Submission
             .builder()
             .legalName("Test Org Name v2")
             .schemeName("v2Scheme Name")
             .gapId("GAP-LL-20220927-00001")
             .submittedDate(Instant.parse("2022-02-15T18:35:24.00Z"))
-            .sections(V2_SUBMISSION_SECTIONS_LIST)
+            .sections(V2_SUBMISSION_SECTIONS_LIST_LIMITED_WITH_CC_AND_CH)
+            .schemeVersion(2)
+            .build();
+
+    public static final List<SubmissionSection> V2_SUBMISSION_SECTIONS_LIST_LIMITED_WITHOUT_CC_AND_CH = Arrays.asList(
+            ELIGIBILITY_SECTION_SUBMISSION,
+            ORGANISATION_DETAILS_SECTION_SUBMISSION_LIMITED_WITHOUT_CC_AND_CH,
+            FUNDING_DETAILS_SECTION_SUBMISSION
+    );
+
+    public static final Submission V2_SUBMISSION_LIMITED_COMPANY_WITHOUT_CC_AND_CH = Submission
+            .builder()
+            .legalName("Test Org Name v2")
+            .schemeName("v2Scheme Name")
+            .gapId("GAP-LL-20220927-00001")
+            .submittedDate(Instant.parse("2022-02-15T18:35:24.00Z"))
+            .sections(V2_SUBMISSION_SECTIONS_LIST_LIMITED_WITHOUT_CC_AND_CH)
             .schemeVersion(2)
             .build();
 
