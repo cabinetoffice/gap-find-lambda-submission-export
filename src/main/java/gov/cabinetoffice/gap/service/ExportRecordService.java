@@ -23,7 +23,7 @@ public class ExportRecordService {
 
     public static void addS3ObjectKeyToExportRecord(OkHttpClient restClient, String exportId, String submissionId, String s3ObjectKey)
             throws Exception {
-        final String patchEndpoint = "/submissions/" + submissionId + "/export-batch/" + exportId + "/s3-object-key";
+        final String patchEndpoint = "/submissions/" + submissionId + "/export-batch/" + exportId + "/signedUrl";
 
         RestService.sendPatchRequest(restClient, new AddingS3ObjectKeyDTO(s3ObjectKey), patchEndpoint);
     }
