@@ -11,7 +11,6 @@ import gov.cabinetoffice.gap.model.Submission;
 import gov.cabinetoffice.gap.service.ExportRecordService;
 import gov.cabinetoffice.gap.service.NotifyService;
 import gov.cabinetoffice.gap.service.OdtService;
-import gov.cabinetoffice.gap.service.S3Service;
 import gov.cabinetoffice.gap.service.SubmissionService;
 import gov.cabinetoffice.gap.service.ZipService;
 import gov.cabinetoffice.gap.utils.HelperUtils;
@@ -63,17 +62,13 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
             // STEP 4 - upload zip to S3
             String zipObjectKey = ZipService.uploadZip(submission, filename);
 
-            // STEP 5 - generate signed url for zip file
-            String signedUrl = S3Service.generateExportDocSignedUrl(s3client, zipObjectKey);
-            logger.info("Signed URL created");
+            // Step 5 - Add S3 object key to export
+            ExportRecordService.addS3ObjectKeyToExportRecord(restClient, exportBatchId, submissionId, zipObjectKey);
 
-            // Step 6 - Add signedURL to export
-            ExportRecordService.addSignedUrlToExportRecord(restClient, exportBatchId, submissionId, signedUrl);
-
-            // STEP 7 - update export record to COMPLETE
+            // STEP 6 - update export record to COMPLETE
             ExportRecordService.updateExportRecordStatus(restClient, exportBatchId, submissionId, GrantExportStatus.COMPLETE);
 
-            // STEP 8 - if final submission, email admin
+            // STEP 7 - if final submission, email admin
             final Long outstandingCount = ExportRecordService.getOutstandingExportsCount(restClient, exportBatchId);
 
             if (Objects.equals(outstandingCount, 0L)) {

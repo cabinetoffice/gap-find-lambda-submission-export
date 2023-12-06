@@ -1,6 +1,7 @@
 package gov.cabinetoffice.gap.service;
 
 import gov.cabinetoffice.gap.model.Submission;
+import gov.cabinetoffice.gap.model.SubmissionQuestion;
 import gov.cabinetoffice.gap.model.SubmissionSection;
 import org.odftoolkit.odfdom.doc.OdfTextDocument;
 import org.odftoolkit.odfdom.doc.table.OdfTable;
@@ -25,6 +26,15 @@ public class OdtService {
     private static final String ORGANISATION_DETAILS_SECTION_ID = "ORGANISATION_DETAILS";
     private static final String FUNDING_DETAILS_SECTION_ID = "FUNDING_DETAILS";
 
+    private static final String APPLICANT_TYPE = "APPLICANT_TYPE";
+    private static final String APPLICANT_ORG_NAME = "APPLICANT_ORG_NAME";
+    private static final String APPLICANT_ORG_ADDRESS = "APPLICANT_ORG_ADDRESS";
+    private static final String APPLICANT_ORG_CHARITY_NUMBER = "APPLICANT_ORG_CHARITY_NUMBER";
+    private static final String APPLICANT_ORG_COMPANIES_HOUSE = "APPLICANT_ORG_COMPANIES_HOUSE";
+    private static final String APPLICANT_AMOUNT = "APPLICANT_AMOUNT";
+    private static final String BENEFITIARY_LOCATION = "BENEFITIARY_LOCATION";
+    private static final String APPLICANT_ORG_TYPE_INDIVIDUAL = "I am applying as an individual";
+
     OdtService() {
     }
 
@@ -42,6 +52,8 @@ public class OdtService {
 
             final SubmissionSection eligibilitySection = submission.getSectionById(ELIGIBILITY_SECTION_ID);
             final SubmissionSection requiredCheckSection = submission.getSectionById(requiredCheckSectionName);
+            final String orgType = requiredCheckSection.getQuestionById(APPLICANT_TYPE).getResponse();
+            final Boolean isIndividual = Objects.equals(orgType, APPLICANT_ORG_TYPE_INDIVIDUAL);
 
             OdfTextParagraph sectionBreak = new OdfTextParagraph(contentDom);
             sectionBreak.addContentWhitespace("\n\n");
@@ -50,14 +62,15 @@ public class OdtService {
             OdfTextHeading mainHeading = new OdfTextHeading(contentDom);
             mainHeading.addStyledContentWhitespace(smallHeadingStyle, "Scheme applied for: " +
                     submission.getSchemeName() + "\n\n");
-            mainHeading.addStyledContentWhitespace(smallHeadingStyle, "Organisation name: " +
+            final String nameHeadingPrefix = isIndividual ? "Applicant" : "Organisation";
+            mainHeading.addStyledContentWhitespace(smallHeadingStyle, nameHeadingPrefix + " name: " +
                     submission.getLegalName() + "\n\n");
             mainHeading.addStyledContentWhitespace(smallHeadingStyle, "Gap ID: " +
                     submission.getGapId() + "\n\n");
             mainHeading.addStyledContentWhitespace(smallHeadingStyle, "Submitted date: " +
                     dateTimeFormatter.format(submission.getSubmittedDate()) + "\n\n");
             mainHeading.addStyledContentWhitespace(smallHeadingStyle, "Amount applied for: £" +
-                    submission.getQuestionById(fundingSectionName, "APPLICANT_AMOUNT").getResponse());
+                    submission.getQuestionById(fundingSectionName, APPLICANT_AMOUNT).getResponse());
             documentText.appendChild(mainHeading);
 
             // ELIGIBILITY SECTION
@@ -93,7 +106,7 @@ public class OdtService {
             locationQuestion.addStyledContent(smallHeadingStyle, "Where this funding will be spent");
 
             locationResponse.addContentWhitespace(String.join(",\n",
-                    submission.getQuestionById(fundingSectionName, "BENEFITIARY_LOCATION").getMultiResponse()));
+                    submission.getQuestionById(fundingSectionName, BENEFITIARY_LOCATION).getMultiResponse()));
 
             documentText.appendChild(locationQuestion);
             documentText.appendChild(locationResponse);
@@ -181,13 +194,17 @@ public class OdtService {
                                                             final String email) {
         OdfTable odfTable = OdfTable.newTable(documentText, 7, 2);
 
-        odfTable.getRowByIndex(0).getCellByIndex(0).setStringValue("Legal Name of Organisation");
-        odfTable.getRowByIndex(0).getCellByIndex(1).setStringValue(section.getQuestionById("APPLICANT_ORG_NAME").getResponse());
+        final String orgType = section.getQuestionById(APPLICANT_TYPE).getResponse();
+        final Boolean isIndividual = Objects.equals(orgType, APPLICANT_ORG_TYPE_INDIVIDUAL);
+
+        final String orgNameHeading = isIndividual ? "Applicant name" : "Legal name of organisation";
+        odfTable.getRowByIndex(0).getCellByIndex(0).setStringValue(orgNameHeading);
+        odfTable.getRowByIndex(0).getCellByIndex(1).setStringValue(section.getQuestionById(APPLICANT_ORG_NAME).getResponse());
 
         odfTable.getRowByIndex(1).getCellByIndex(0).setStringValue("Type of organisation");
-        odfTable.getRowByIndex(1).getCellByIndex(1).setStringValue(section.getQuestionById("APPLICANT_TYPE").getResponse());
+        odfTable.getRowByIndex(1).getCellByIndex(1).setStringValue(orgType);
 
-        String[] applicantOrgAddress = section.getQuestionById("APPLICANT_ORG_ADDRESS").getMultiResponse();
+        String[] applicantOrgAddress = section.getQuestionById(APPLICANT_ORG_ADDRESS).getMultiResponse();
 
         odfTable.getRowByIndex(2).getCellByIndex(0).setStringValue("The first line of address for the organisation");
         odfTable.getRowByIndex(2).getCellByIndex(1).setStringValue(applicantOrgAddress[0]);
@@ -211,14 +228,39 @@ public class OdtService {
         odfTable.getRowByIndex(7).getCellByIndex(1)
                 .setStringValue(email);
 
-        odfTable.getRowByIndex(8).getCellByIndex(0)
-                .setStringValue("Charities Commission number if the organisation has one (if blank, number has not been entered)");
-        odfTable.getRowByIndex(8).getCellByIndex(1).setStringValue(section.getQuestionById("APPLICANT_ORG_CHARITY_NUMBER").getResponse());
+        Integer index = 8;
+        final Boolean hasCharityCommissionNumber = section
+                .mayGetQuestionById(APPLICANT_ORG_CHARITY_NUMBER)
+                .isPresent();
+        if (hasCharityCommissionNumber) {
+            odfTable.getRowByIndex(index)
+                    .getCellByIndex(0)
+                    .setStringValue("Charities Commission number if the organisation has one (if blank, number has not been entered)");
+            odfTable.getRowByIndex(index)
+                    .getCellByIndex(1)
+                    .setStringValue(section
+                            .mayGetQuestionById(APPLICANT_ORG_CHARITY_NUMBER)
+                            .map(SubmissionQuestion::getResponse)
+                            .orElse("")
+                    );
+            index++;
+        }
 
-        odfTable.getRowByIndex(9).getCellByIndex(0)
-                .setStringValue("Companies House number if the organisation has one (if blank, number has not been entered)");
-        odfTable.getRowByIndex(9).getCellByIndex(1).
-                setStringValue(section.getQuestionById("APPLICANT_ORG_COMPANIES_HOUSE").getResponse());
+        final Boolean hasCompaniesHouseNumber = section
+                .mayGetQuestionById(APPLICANT_ORG_COMPANIES_HOUSE)
+                .isPresent();
+        if (hasCompaniesHouseNumber) {
+            odfTable.getRowByIndex(index)
+                    .getCellByIndex(0)
+                    .setStringValue("Companies House number if the organisation has one (if blank, number has not been entered)");
+            odfTable.getRowByIndex(index)
+                    .getCellByIndex(1)
+                    .setStringValue(section
+                            .mayGetQuestionById(APPLICANT_ORG_COMPANIES_HOUSE)
+                            .map(SubmissionQuestion::getResponse)
+                            .orElse("")
+                    );
+        }
 
         return odfTable.getOdfElement();
     }
