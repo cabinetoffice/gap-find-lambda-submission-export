@@ -168,7 +168,7 @@ public class OdtService {
                             case ShortAnswer:
                             case LongAnswer:
                             case Numeric:
-                                if(question.getResponse() == null) {
+                                if(question.getResponse() == null || question.getResponse().isEmpty()) {
                                     responseParagraph.addContentWhitespace("Not provided");
                                 } else {
                                     responseParagraph.addContentWhitespace(question.getResponse() + "\n");
