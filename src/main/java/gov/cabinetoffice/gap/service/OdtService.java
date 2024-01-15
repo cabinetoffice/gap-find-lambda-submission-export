@@ -163,6 +163,17 @@ public class OdtService {
                                     responseParagraph.addContentWhitespace("\n");
                                 }
                                 break;
+                            case YesNo:
+                            case Dropdown:
+                            case ShortAnswer:
+                            case LongAnswer:
+                            case Numeric:
+                                if(question.getResponse() == null) {
+                                    responseParagraph.addContentWhitespace("Not provided");
+                                } else {
+                                    responseParagraph.addContentWhitespace(question.getResponse() + "\n");
+                                }
+                                break;
                             default:
                                 responseParagraph.addContentWhitespace(question.getResponse() + "\n");
                                 break;
