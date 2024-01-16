@@ -157,10 +157,10 @@ public class OdtService {
                                 break;
                             case Date:
                                 if (question.getMultiResponse() != null) {
-                                    responseParagraph.addContentWhitespace(String.join("-",
-                                            question.getMultiResponse()) + "\n");
+                                    final String date = String.join("-", question.getMultiResponse());
+                                    responseParagraph.addContentWhitespace((date.equals("--") ? "Not provided" : date) + "\n");
                                 } else {
-                                    responseParagraph.addContentWhitespace("\n");
+                                    responseParagraph.addContentWhitespace("Not provided");
                                 }
                                 break;
                             case YesNo:
