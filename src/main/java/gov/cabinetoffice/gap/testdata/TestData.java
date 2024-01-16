@@ -373,7 +373,7 @@ public class TestData {
             .multiResponse(new String[]{"V2_Scotland", "V2_North East England"})
             .build();
 
-    public static final SubmissionQuestion YES_NO_OPTIONAL_QUESTION = SubmissionQuestion.builder()
+    public static final SubmissionQuestion OPTIONAL_YES_NO_QUESTION = SubmissionQuestion.builder()
             .questionId("YES/NO")
             .fieldTitle("Yes/No question")
             .displayText("Some text describing the question.")
@@ -388,7 +388,7 @@ public class TestData {
             .response(null)
             .build();
 
-    public static final SubmissionQuestion DATE_OPTIONAL_QUESTION = SubmissionQuestion.builder()
+    public static final SubmissionQuestion OPTIONAL_DATE_QUESTION = SubmissionQuestion.builder()
             .questionId("DATE")
             .fieldTitle("Date question")
             .displayText("Some text describing what date is needed.")
@@ -402,12 +402,39 @@ public class TestData {
             .multiResponse(new String[]{"", "", ""})
             .build();
 
+    public static final SubmissionQuestion OPTIONAL_MULTISELECT_QUESTION = SubmissionQuestion.builder()
+            .questionId("MULTISELECT")
+            .fieldTitle("Multi select question")
+            .displayText("Some text describing what to select.")
+            .responseType(ResponseTypeEnum.MultipleSelection)
+            .validation(
+                    SubmissionQuestionValidation
+                            .builder()
+                            .mandatory(false)
+                            .build()
+            )
+            .multiResponse(null)
+            .build();
+    public static final SubmissionQuestion OPTIONAL_FILE_UPLOAD_QUESTION = SubmissionQuestion.builder()
+            .questionId("FILE_UPLOAD")
+            .fieldTitle("File upload question")
+            .displayText("Some text describing what upload.")
+            .responseType(ResponseTypeEnum.SingleFileUpload)
+            .validation(
+                    SubmissionQuestionValidation
+                            .builder()
+                            .mandatory(false)
+                            .build()
+            )
+            .response(null)
+            .build();
+
     public static final SubmissionSection CUSTOM_SECTION_SUBMISSION = SubmissionSection
             .builder()
             .sectionId("CUSTOM")
             .sectionTitle("Custom section")
             .sectionStatus(SubmissionSectionStatus.COMPLETED)
-            .questions(List.of(YES_NO_OPTIONAL_QUESTION, DATE_OPTIONAL_QUESTION))
+            .questions(List.of(OPTIONAL_YES_NO_QUESTION, OPTIONAL_DATE_QUESTION, OPTIONAL_MULTISELECT_QUESTION, OPTIONAL_FILE_UPLOAD_QUESTION))
             .build();
 
     public static final SubmissionSection ELIGIBILITY_SECTION_SUBMISSION = SubmissionSection

@@ -142,7 +142,7 @@ public class OdtService {
                                     responseParagraph.addContentWhitespace(String.join(",\n",
                                             question.getMultiResponse()) + "\n");
                                 } else {
-                                    responseParagraph.addContentWhitespace("\n");
+                                    responseParagraph.addContentWhitespace("Not provided");
                                 }
                                 break;
                             case SingleFileUpload:
@@ -152,15 +152,15 @@ public class OdtService {
                                     responseParagraph.addContentWhitespace("File name: " + question.getResponse().substring(0, index) + "\n");
                                     responseParagraph.addContentWhitespace("File extension: " + question.getResponse().substring(index + 1) + "\n");
                                 } else {
-                                    responseParagraph.addContentWhitespace("\n");
+                                    responseParagraph.addContentWhitespace("Not provided");
                                 }
                                 break;
                             case Date:
                                 if (question.getMultiResponse() != null) {
-                                    responseParagraph.addContentWhitespace(String.join("-",
-                                            question.getMultiResponse()) + "\n");
+                                    final String date = String.join("-", question.getMultiResponse());
+                                    responseParagraph.addContentWhitespace((date.equals("--") ? "Not provided" : date) + "\n");
                                 } else {
-                                    responseParagraph.addContentWhitespace("\n");
+                                    responseParagraph.addContentWhitespace("Not provided");
                                 }
                                 break;
                             case YesNo:
