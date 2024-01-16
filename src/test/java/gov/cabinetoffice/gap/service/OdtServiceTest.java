@@ -187,6 +187,8 @@ class OdtServiceTest {
         assertThat(generatedContent).contains("Custom section");
         assertThat(generatedContent).contains("Yes/No question");
         assertThat(generatedContent).contains("Date question");
+        assertThat(generatedContent).contains("Multi select question");
+        assertThat(generatedContent).contains("File upload question");
         assertThat(generatedContent).contains("Not provided");
     }
 
