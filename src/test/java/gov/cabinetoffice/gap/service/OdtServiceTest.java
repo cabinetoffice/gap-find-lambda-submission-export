@@ -177,6 +177,19 @@ class OdtServiceTest {
         assertThat(generatedContent).doesNotContain("My Custom Section");
     }
 
+    @Test
+    void compareTestGenerateSingleOdtForOptionalCustomSectionQuestions() throws Exception {
+        final Submission submission = V2_SUBMISSION_WITH_CUSTOM_SECTION;
+        OdtService.generateSingleOdt(submission, "testFileName6");
+        final OdfDocument generatedDoc = OdfDocument.loadDocument("/tmp/testFileName6.odt");
+        final String generatedContent = docToString(generatedDoc.getContentDom());
+
+        assertThat(generatedContent).contains("Custom section");
+        assertThat(generatedContent).contains("Yes/No question");
+        assertThat(generatedContent).contains("Date question");
+        assertThat(generatedContent).contains("Not provided");
+    }
+
     private String docToString(Document document) throws Exception {
         TransformerFactory tf = TransformerFactory.newInstance();
         Transformer transformer = tf.newTransformer();
