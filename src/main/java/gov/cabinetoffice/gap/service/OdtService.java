@@ -142,7 +142,7 @@ public class OdtService {
                                     responseParagraph.addContentWhitespace(String.join(",\n",
                                             question.getMultiResponse()) + "\n");
                                 } else {
-                                    responseParagraph.addContentWhitespace("Not provided");
+                                    responseParagraph.addContentWhitespace("Not provided" +  "\n");
                                 }
                                 break;
                             case SingleFileUpload:
@@ -152,7 +152,7 @@ public class OdtService {
                                     responseParagraph.addContentWhitespace("File name: " + question.getResponse().substring(0, index) + "\n");
                                     responseParagraph.addContentWhitespace("File extension: " + question.getResponse().substring(index + 1) + "\n");
                                 } else {
-                                    responseParagraph.addContentWhitespace("Not provided");
+                                    responseParagraph.addContentWhitespace("Not provided" +  "\n");
                                 }
                                 break;
                             case Date:
