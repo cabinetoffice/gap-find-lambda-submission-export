@@ -160,7 +160,7 @@ public class OdtService {
                                     final String date = String.join("-", question.getMultiResponse());
                                     responseParagraph.addContentWhitespace((date.equals("--") ? "Not provided" : date) + "\n");
                                 } else {
-                                    responseParagraph.addContentWhitespace("Not provided");
+                                    responseParagraph.addContentWhitespace("Not provided" +  "\n");
                                 }
                                 break;
                             case YesNo:
@@ -169,7 +169,7 @@ public class OdtService {
                             case LongAnswer:
                             case Numeric:
                                 if(question.getResponse() == null || question.getResponse().isEmpty()) {
-                                    responseParagraph.addContentWhitespace("Not provided");
+                                    responseParagraph.addContentWhitespace("Not provided" + "\n");
                                 } else {
                                     responseParagraph.addContentWhitespace(question.getResponse() + "\n");
                                 }
