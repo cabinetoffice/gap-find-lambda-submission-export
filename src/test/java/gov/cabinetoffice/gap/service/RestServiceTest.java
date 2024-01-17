@@ -1,7 +1,11 @@
 package gov.cabinetoffice.gap.service;
 
 import gov.cabinetoffice.gap.model.OutstandingExportCountDTO;
-import okhttp3.*;
+import okhttp3.Call;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
 import okio.Buffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -11,12 +15,17 @@ import org.mockito.MockedStatic;
 
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class RestServiceTest {
 
@@ -44,15 +53,16 @@ public class RestServiceTest {
             when(mockResponse.body()).thenReturn(mockResponseBody);
             when(mockResponseBody.string()).thenReturn("{ \"outstandingCount\": 1 }");
 
-            final OutstandingExportCountDTO expectedResponse = new OutstandingExportCountDTO(1l);
+            final OutstandingExportCountDTO expectedResponse = new OutstandingExportCountDTO(1L);
 
             try (MockedStatic<RestService> mockedRestService = mockStatic(RestService.class)) {
 
+                mockedRestService.when(() -> RestService.encrypt(anyString(), anyString())).thenReturn("encryptedValue");
                 mockedRestService.when(() -> RestService.defaultRequestBuilder()).thenCallRealMethod();
                 mockedRestService.when(() -> RestService.sendGetRequest(any(), any(), anyString(), any()))
                         .thenCallRealMethod();
 
-                OutstandingExportCountDTO response = RestService.sendGetRequest(mockedHttpClient,null, "/test/url",
+                OutstandingExportCountDTO response = RestService.sendGetRequest(mockedHttpClient, null, "/test/url",
                         OutstandingExportCountDTO.class);
 
                 verify(mockedHttpClient).newCall(httpRequestCaptor.capture());
@@ -78,10 +88,11 @@ public class RestServiceTest {
             when(mockResponse.body()).thenReturn(mockResponseBody);
             when(mockResponseBody.string()).thenReturn("{ \"outstandingCount\": 1 }");
 
-            final OutstandingExportCountDTO expectedResponse = new OutstandingExportCountDTO(1l);
+            final OutstandingExportCountDTO expectedResponse = new OutstandingExportCountDTO(1L);
 
             try (MockedStatic<RestService> mockedRestService = mockStatic(RestService.class)) {
 
+                mockedRestService.when(() -> RestService.encrypt(anyString(), anyString())).thenReturn("encryptedValue");
                 mockedRestService.when(() -> RestService.defaultRequestBuilder()).thenCallRealMethod();
                 mockedRestService.when(() -> RestService.sendGetRequest(any(), anyMap(), anyString(), any()))
                         .thenCallRealMethod();
@@ -113,7 +124,7 @@ public class RestServiceTest {
             when(mockCall.execute()).thenReturn(mockResponse);
             when(mockResponse.isSuccessful()).thenReturn(false);
 
-            final OutstandingExportCountDTO expectedResponse = new OutstandingExportCountDTO(1l);
+            final OutstandingExportCountDTO expectedResponse = new OutstandingExportCountDTO(1L);
 
             try (MockedStatic<RestService> mockedRestService = mockStatic(RestService.class)) {
 
@@ -141,8 +152,9 @@ public class RestServiceTest {
 
             try (MockedStatic<RestService> mockedRestService = mockStatic(RestService.class)) {
 
-                OutstandingExportCountDTO bodyDTO = new OutstandingExportCountDTO(1l);
+                OutstandingExportCountDTO bodyDTO = new OutstandingExportCountDTO(1L);
 
+                mockedRestService.when(() -> RestService.encrypt(anyString(), anyString())).thenReturn("encryptedValue");
                 mockedRestService.when(() -> RestService.defaultRequestBuilder()).thenCallRealMethod();
                 mockedRestService.when(() -> RestService.executePost(any(), any(), anyString())).thenCallRealMethod();
                 mockedRestService
@@ -174,6 +186,7 @@ public class RestServiceTest {
 
             try (MockedStatic<RestService> mockedRestService = mockStatic(RestService.class)) {
 
+                mockedRestService.when(() -> RestService.encrypt(anyString(), anyString())).thenReturn("encryptedValue");
                 mockedRestService.when(() -> RestService.defaultRequestBuilder()).thenCallRealMethod();
                 mockedRestService.when(() -> RestService.executePost(any(), any(), anyString())).thenCallRealMethod();
                 mockedRestService.when(() -> RestService.sendPostRequest(any(), any(), anyString())).thenCallRealMethod();
@@ -203,6 +216,7 @@ public class RestServiceTest {
 
             try (MockedStatic<RestService> mockedRestService = mockStatic(RestService.class)) {
 
+                mockedRestService.when(() -> RestService.encrypt(anyString(), anyString())).thenReturn("encryptedValue");
                 mockedRestService.when(() -> RestService.defaultRequestBuilder()).thenCallRealMethod();
                 mockedRestService.when(() -> RestService.executePost(any(), any(), anyString())).thenCallRealMethod();
                 mockedRestService.when(() -> RestService.sendPostRequest(any(), any(), anyString())).thenCallRealMethod();
@@ -228,8 +242,9 @@ public class RestServiceTest {
 
             try (MockedStatic<RestService> mockedRestService = mockStatic(RestService.class)) {
 
-                OutstandingExportCountDTO bodyDTO = new OutstandingExportCountDTO(1l);
+                OutstandingExportCountDTO bodyDTO = new OutstandingExportCountDTO(1L);
 
+                mockedRestService.when(() -> RestService.encrypt(anyString(), anyString())).thenReturn("encryptedValue");
                 mockedRestService.when(() -> RestService.defaultRequestBuilder()).thenCallRealMethod();
                 mockedRestService.when(() -> RestService.sendPatchRequest(any(), any(), anyString())).thenCallRealMethod();
 
@@ -257,8 +272,9 @@ public class RestServiceTest {
 
             try (MockedStatic<RestService> mockedRestService = mockStatic(RestService.class)) {
 
-                OutstandingExportCountDTO bodyDTO = new OutstandingExportCountDTO(1l);
+                OutstandingExportCountDTO bodyDTO = new OutstandingExportCountDTO(1L);
 
+                mockedRestService.when(() -> RestService.encrypt(anyString(), anyString())).thenReturn("encryptedValue");
                 mockedRestService.when(() -> RestService.defaultRequestBuilder()).thenCallRealMethod();
                 mockedRestService.when(() -> RestService.sendPatchRequest(any(), any(), anyString())).thenCallRealMethod();
 
@@ -267,5 +283,24 @@ public class RestServiceTest {
         }
 
     }
+
+    @Nested
+    class encrypt {
+        @Test
+        void shouldNotThrowException() {
+            final String originalSecret = "expectedToken";
+            final String publicKey = "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA1Cg0wsx+v3KKqn9sveTVifxX60m09u96wq00/Ip/gg3g2h5pvpB0sDooC+aOVXIuJGO9f6aiwEqfT8Jkm21rs05ytIa99GmbGBC1a9Tb+JROiK0FG8tqQ2ol3Xfz6ygXlxm83eSTZmpmKi5/AfY5d0n7XXuuqRoYpmkq9jEyxnxN9maCvFQN5gBxlEbfc1mdwfe3for5E/1E7uuFc3M7MqyH/UbZZdMayJItNDU6F7eYF99mD8xh19WWLU9mhlaX2UqYJ8DriWTkSHqRPGgeY7Kr8tuIBgYutJ2BUl1tZsVUSe1R2aDiz5Il9vAS3sbJeAiGE7wFMCYRBst0MTk1kQIDAQAB";
+
+            assertDoesNotThrow(() -> RestService.encrypt(originalSecret, publicKey));
+        }
+
+        @Test
+        void shouldThrowException() {
+            final String originalSecret = "expectedToken";
+            final String publicKey = "wrongFormattedKey";
+            assertThrows(RuntimeException.class, () -> RestService.encrypt(originalSecret, publicKey));
+        }
+    }
+
 
 }
