@@ -141,7 +141,7 @@ public class OdtService {
                                 if (question.getMultiResponse() != null) {
                                     final String response = String.join(",\n",
                                             question.getMultiResponse());
-                                    responseParagraph.addContentWhitespace(response.isEmpty() ? "Not provided" : response + "\n");
+                                    responseParagraph.addContentWhitespace((response.isEmpty() ? "Not provided" : response) + "\n");
                                 } else {
                                     responseParagraph.addContentWhitespace("Not provided" +  "\n");
                                 }
