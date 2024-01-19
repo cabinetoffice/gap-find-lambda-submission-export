@@ -139,8 +139,9 @@ public class OdtService {
                             case AddressInput:
                             case MultipleSelection:
                                 if (question.getMultiResponse() != null) {
-                                    responseParagraph.addContentWhitespace(String.join(",\n",
-                                            question.getMultiResponse()) + "\n");
+                                    final String response = String.join(",\n",
+                                            question.getMultiResponse());
+                                    responseParagraph.addContentWhitespace(response.isEmpty() ? "Not provided" : response + "\n");
                                 } else {
                                     responseParagraph.addContentWhitespace("Not provided" +  "\n");
                                 }
