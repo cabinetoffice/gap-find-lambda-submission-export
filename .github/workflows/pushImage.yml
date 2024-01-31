@@ -58,6 +58,10 @@ jobs:
     environment: AWS
     runs-on: ubuntu-latest
 
+    permissions:
+      id-token: write
+      contents: read
+
     steps:
       - uses: actions/checkout@v3
         with:
@@ -80,7 +84,7 @@ jobs:
 
       - name: Login to AWS ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
+        uses: aws-actions/amazon-ecr-login@v2
 
       - name: Determine & set BUILD_VERSION
         run: |
