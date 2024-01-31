@@ -16,10 +16,6 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-    
-    permissions:
-        id-token: write
-        contents: read
 
     # Need to check here as create event can't be filtered by branch name...
     if: github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/release')
