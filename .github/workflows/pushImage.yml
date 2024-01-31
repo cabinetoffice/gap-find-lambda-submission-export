@@ -16,10 +16,6 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-    
-    permissions:
-        id-token: write
-        contents: read
 
     # Need to check here as create event can't be filtered by branch name...
     if: github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/release')
@@ -58,6 +54,10 @@ jobs:
     environment: AWS
     runs-on: ubuntu-latest
 
+    permissions:
+      id-token: write
+      contents: read
+
     steps:
       - uses: actions/checkout@v3
         with:
@@ -80,7 +80,7 @@ jobs:
 
       - name: Login to AWS ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
+        uses: aws-actions/amazon-ecr-login@v2
 
       - name: Determine & set BUILD_VERSION
         run: |
