@@ -373,6 +373,69 @@ public class TestData {
             .multiResponse(new String[]{"V2_Scotland", "V2_North East England"})
             .build();
 
+    public static final SubmissionQuestion OPTIONAL_YES_NO_QUESTION = SubmissionQuestion.builder()
+            .questionId("YES/NO")
+            .fieldTitle("Yes/No question")
+            .displayText("Some text describing the question.")
+            .questionSuffix("Do you want to apply?")
+            .responseType(ResponseTypeEnum.YesNo)
+            .validation(
+                    SubmissionQuestionValidation
+                            .builder()
+                            .mandatory(false)
+                            .build()
+            )
+            .response(null)
+            .build();
+
+    public static final SubmissionQuestion OPTIONAL_DATE_QUESTION = SubmissionQuestion.builder()
+            .questionId("DATE")
+            .fieldTitle("Date question")
+            .displayText("Some text describing what date is needed.")
+            .responseType(ResponseTypeEnum.Date)
+            .validation(
+                    SubmissionQuestionValidation
+                            .builder()
+                            .mandatory(false)
+                            .build()
+            )
+            .multiResponse(new String[]{"", "", ""})
+            .build();
+
+    public static final SubmissionQuestion OPTIONAL_MULTISELECT_QUESTION = SubmissionQuestion.builder()
+            .questionId("MULTISELECT")
+            .fieldTitle("Multi select question")
+            .displayText("Some text describing what to select.")
+            .responseType(ResponseTypeEnum.MultipleSelection)
+            .validation(
+                    SubmissionQuestionValidation
+                            .builder()
+                            .mandatory(false)
+                            .build()
+            )
+            .multiResponse(null)
+            .build();
+    public static final SubmissionQuestion OPTIONAL_FILE_UPLOAD_QUESTION = SubmissionQuestion.builder()
+            .questionId("FILE_UPLOAD")
+            .fieldTitle("File upload question")
+            .displayText("Some text describing what upload.")
+            .responseType(ResponseTypeEnum.SingleFileUpload)
+            .validation(
+                    SubmissionQuestionValidation
+                            .builder()
+                            .mandatory(false)
+                            .build()
+            )
+            .response(null)
+            .build();
+
+    public static final SubmissionSection CUSTOM_SECTION_SUBMISSION = SubmissionSection
+            .builder()
+            .sectionId("CUSTOM")
+            .sectionTitle("Custom section")
+            .sectionStatus(SubmissionSectionStatus.COMPLETED)
+            .questions(List.of(OPTIONAL_YES_NO_QUESTION, OPTIONAL_DATE_QUESTION, OPTIONAL_MULTISELECT_QUESTION, OPTIONAL_FILE_UPLOAD_QUESTION))
+            .build();
 
     public static final SubmissionSection ELIGIBILITY_SECTION_SUBMISSION = SubmissionSection
             .builder()
@@ -545,6 +608,23 @@ public class TestData {
             .submittedDate(Instant.parse("2022-02-15T18:35:24.00Z"))
             .sections(V1_SUBMISSION_SECTIONS_LIST)
             .schemeVersion(1)
+            .build();
+
+    public static final List<SubmissionSection> V2_SUBMISSION_WITH_CUSTOM_SECTION_LIST = Arrays.asList(
+            ELIGIBILITY_SECTION_SUBMISSION,
+            ORGANISATION_DETAILS_SECTION_SUBMISSION_LIMITED_WITH_CC_AND_CH,
+            FUNDING_DETAILS_SECTION_SUBMISSION,
+            CUSTOM_SECTION_SUBMISSION
+    );
+
+    public static final Submission V2_SUBMISSION_WITH_CUSTOM_SECTION = Submission
+            .builder()
+            .legalName("Test Org Name v2")
+            .schemeName("v2Scheme Name")
+            .gapId("GAP-LL-20220927-00001")
+            .submittedDate(Instant.parse("2022-02-15T18:35:24.00Z"))
+            .sections(V2_SUBMISSION_WITH_CUSTOM_SECTION_LIST)
+            .schemeVersion(2)
             .build();
 
 }
