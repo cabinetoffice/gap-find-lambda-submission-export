@@ -14,6 +14,7 @@ import gov.cabinetoffice.gap.service.OdtService;
 import gov.cabinetoffice.gap.service.SubmissionService;
 import gov.cabinetoffice.gap.service.ZipService;
 import gov.cabinetoffice.gap.utils.HelperUtils;
+import lombok.SneakyThrows;
 import okhttp3.OkHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,16 +28,21 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
     private static final AmazonS3 s3client = AmazonS3ClientBuilder.defaultClient();
     private static final OkHttpClient restClient = new OkHttpClient();
 
+    @SneakyThrows
     @Override
     public SQSBatchResponse handleRequest(final SQSEvent event, final Context context) {
-        try {
-            final Map<String, SQSEvent.MessageAttribute> messageAttributes = event.getRecords().get(0)
-                    .getMessageAttributes();
-            final String submissionId = messageAttributes.get("submissionId").getStringValue();
-            final String emailAddress = messageAttributes.get("emailAddress").getStringValue();
-            final String exportBatchId = messageAttributes.get("exportBatchId").getStringValue();
-            final String applicationId = messageAttributes.get("applicationId").getStringValue();
+        if(event.getRecords().size() <1) {
+            throw new RuntimeException("No records found in SQS event");
+        }
 
+        final Map<String, SQSEvent.MessageAttribute> messageAttributes = event.getRecords().get(0)
+                .getMessageAttributes();
+        final String submissionId = messageAttributes.get("submissionId").getStringValue();
+        final String emailAddress = messageAttributes.get("emailAddress").getStringValue();
+        final String exportBatchId = messageAttributes.get("exportBatchId").getStringValue();
+        final String applicationId = messageAttributes.get("applicationId").getStringValue();
+
+        try {
             logger.info("Received message with submissionId: {} and exportBatchId: {}", submissionId, exportBatchId);
 
             // STEP 0 - update export record to PROCESSING
@@ -84,7 +90,7 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
             logger.info("Tmp dir cleared");
         } catch (Exception e) {
             logger.error("Could not process message", e);
-            throw new RuntimeException(e);
+            ExportRecordService.updateExportRecordStatus(restClient, exportBatchId, submissionId, GrantExportStatus.FAILED);
         }
 
         logger.info("Message processed successfully");

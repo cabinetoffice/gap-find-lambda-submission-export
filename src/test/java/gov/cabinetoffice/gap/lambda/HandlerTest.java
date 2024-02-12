@@ -25,14 +25,12 @@ import java.io.File;
 
 import static gov.cabinetoffice.gap.testData.SubmissionTestData.SCHEME_ID;
 import static gov.cabinetoffice.gap.testData.SubmissionTestData.V1_SUBMISSION_WITH_ESSENTIAL_SECTION;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public class HandlerTest {
 
@@ -62,6 +60,40 @@ public class HandlerTest {
 
     private Context createContext() {
         return new TestContext();
+    }
+
+    @Test
+    void noRecordsInSqsEvent() {
+        final Context contextMock = createContext();
+        final SQSEvent event = EventLoader.loadSQSEvent("emptyTestEvent.json");
+
+        final Handler handler = new Handler();
+
+        assertThatThrownBy(
+                () -> handler.handleRequest(event, contextMock))
+                .isInstanceOf(RuntimeException.class);
+    }
+
+
+    @Test
+    void updatesStatusWhenExportFails() throws Exception {
+        final SQSEvent event = EventLoader.loadSQSEvent("testEvent.json");
+        final Context contextMock = createContext();
+        final String submissionId = event.getRecords().get(0).getMessageAttributes().get("submissionId")
+                .getStringValue();
+        final String exportBatchId = event.getRecords().get(0).getMessageAttributes().get("exportBatchId")
+                .getStringValue();
+
+        when(SubmissionService.getSubmissionData(any(), anyString(), anyString())).thenThrow(new RuntimeException());
+
+        final Handler handler = new Handler();
+        handler.handleRequest(event, contextMock);
+
+        mockedExportService.verify(() -> ExportRecordService.updateExportRecordStatus(any(), eq(exportBatchId), eq(submissionId),
+                eq(GrantExportStatus.PROCESSING)));
+        mockedSubmissionService.verify(() -> SubmissionService.getSubmissionData(any(), eq(exportBatchId), eq(submissionId)));
+        mockedExportService.verify(() -> ExportRecordService.updateExportRecordStatus(any(), eq(exportBatchId), eq(submissionId),
+                eq(GrantExportStatus.FAILED)));
     }
 
     @Test
@@ -112,10 +144,10 @@ public class HandlerTest {
 
             // STEP 0
             mockedExportService.verify(() -> ExportRecordService.updateExportRecordStatus(any(), eq(exportBatchId), eq(submissionId),
-                    eq(GrantExportStatus.PROCESSING)));
+                    eq(GrantExportStatus.PROCESSING)), atLeastOnce());
 
             // STEP 1
-            mockedSubmissionService.verify(() -> SubmissionService.getSubmissionData(any(), eq(exportBatchId), eq(submissionId)));
+            mockedSubmissionService.verify(() -> SubmissionService.getSubmissionData(any(), eq(exportBatchId), eq(submissionId)), atLeastOnce());
 
             // STEP 2
             mockedOdtService
