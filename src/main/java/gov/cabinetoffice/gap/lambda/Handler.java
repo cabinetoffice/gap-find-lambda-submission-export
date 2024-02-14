@@ -98,6 +98,7 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
             } else {
                 logger.info(
                         String.format("Outstanding exports for export batch %s: %s", exportBatchId, outstandingCount));
+                SnsService.failureInExport(submission.getSchemeName(), outstandingCount);
             }
 
             // STEP 9 - clear tmp dir as this is preserved between frequent invocations
