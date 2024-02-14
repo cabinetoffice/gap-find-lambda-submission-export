@@ -43,17 +43,15 @@ public class ZipService {
     private static AmazonS3 s3Client;
 
     public static void createSuperZip(List<GrantExportDTO> completedGrantExports) throws IOException {
-        // for each grant-export row , get the location and download that file by passing as a name the cleaned version of the location and add it to the temp folder
         final List<String> filenames = new ArrayList<>();
         for (GrantExportDTO grantExport: completedGrantExports) {
             final String location = grantExport.getLocation();
-            // create a list of all the file names(cleaned locations)
             final String folderNameToRemove = location.split("/")[0];
             final String fileName = location.replace(folderNameToRemove + "/", "").replaceAll(SPECIAL_CHARACTER_REGEX, "_");
+
             filenames.add(fileName);
             downloadFile(fileName, SUBMISSION_EXPORTS_BUCKET_NAME);
         }
-        // pass those files to zipFiles method
         zipFiles(filenames,"");
 
     }

@@ -79,27 +79,20 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
                 ZipService.deleteTmpDirContents();
                 // TODO should we add status for processing etc?
                 try {
-                    // get all the grant-export rows for the grant-export id with status not failed
                     final List<GrantExportDTO> completedGrantExports = ExportRecordService.getCompletedExportRecordsByBatchId(restClient, exportBatchId);
 
-                    //call create super zip method
                     ZipService.createSuperZip(completedGrantExports);
 
-                    //call upload message
                     final String superZipFilename = HelperUtils.generateFilename(submission.getSchemeName(), ""); // TODO what should we name this
                     String superZipObjectKey = ZipService.uploadZip(submission.getSchemeId(), superZipFilename);
 
-                    //update location
                     GrantExportBatchService.addS3ObjectKeyToGrantExportBatchRecord(restClient, exportBatchId, superZipObjectKey);
-
-                    //update grant_export_batch table
                     GrantExportBatchService.updateGrantExportBatchRecordStatus(restClient, exportBatchId, GrantExportStatus.COMPLETE);
 
                     NotifyService.sendConfirmationEmail(restClient, emailAddress, exportBatchId, submission.getSchemeId(),
                             submissionId);
                 } catch (Exception e) {
                     logger.error("Could not process message", e);
-                    //update grant_export_batch table to FAILED
                     GrantExportBatchService.updateGrantExportBatchRecordStatus(restClient, exportBatchId, GrantExportStatus.FAILED);
                 }
             } else {
