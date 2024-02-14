@@ -75,7 +75,7 @@ public class ZipService {
 
     public static String uploadZip(final String id, final String zipFilename) {
         try {
-            final String objectKey =  id + "/" + zipFilename + ".zip";
+            final String objectKey = id + "/" + zipFilename + ".zip";
             s3Client.putObject(System.getenv("SUBMISSION_EXPORTS_BUCKET_NAME"), objectKey,
                     new File(TMP_DIR + LOCAL_ZIP_FILE_NAME));
             logger.info("Zip file uploaded to S3");
