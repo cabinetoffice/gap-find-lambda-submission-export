@@ -7,18 +7,16 @@ import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import gov.cabinetoffice.gap.enums.GrantExportStatus;
+import gov.cabinetoffice.gap.model.GrantExportDTO;
 import gov.cabinetoffice.gap.model.Submission;
-import gov.cabinetoffice.gap.service.ExportRecordService;
-import gov.cabinetoffice.gap.service.NotifyService;
-import gov.cabinetoffice.gap.service.OdtService;
-import gov.cabinetoffice.gap.service.SubmissionService;
-import gov.cabinetoffice.gap.service.ZipService;
+import gov.cabinetoffice.gap.service.*;
 import gov.cabinetoffice.gap.utils.HelperUtils;
 import lombok.SneakyThrows;
 import okhttp3.OkHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -66,7 +64,7 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
             ZipService.createZip(s3client, filename, applicationId, submissionId);
 
             // STEP 4 - upload zip to S3
-            String zipObjectKey = ZipService.uploadZip(submission, filename);
+            String zipObjectKey = ZipService.uploadZip(submission.getGapId(), filename);
 
             // Step 5 - Add S3 object key to export
             ExportRecordService.addS3ObjectKeyToExportRecord(restClient, exportBatchId, submissionId, zipObjectKey);
@@ -78,8 +76,32 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
             final Long outstandingCount = ExportRecordService.getOutstandingExportsCount(restClient, exportBatchId);
 
             if (Objects.equals(outstandingCount, 0L)) {
-                NotifyService.sendConfirmationEmail(restClient, emailAddress, exportBatchId, submission.getSchemeId(),
-                        submissionId);
+                ZipService.deleteTmpDirContents();
+                // TODO should we add status for processing etc?
+                try {
+                    // get all the grant-export rows for the grant-export id with status not failed
+                    final List<GrantExportDTO> completedGrantExports = ExportRecordService.getCompletedExportRecordsByBatchId(restClient, exportBatchId);
+
+                    //call create super zip method
+                    ZipService.createSuperZip(completedGrantExports);
+
+                    //call upload message
+                    final String superZipFilename = HelperUtils.generateFilename(submission.getSchemeName(), ""); // TODO what should we name this
+                    String superZipObjectKey = ZipService.uploadZip(submission.getSchemeId(), superZipFilename);
+
+                    //update location
+                    GrantExportBatchService.addS3ObjectKeyToGrantExportBatchRecord(restClient, exportBatchId, superZipObjectKey);
+
+                    //update grant_export_batch table
+                    GrantExportBatchService.updateGrantExportBatchRecordStatus(restClient, exportBatchId, GrantExportStatus.COMPLETE);
+
+                    NotifyService.sendConfirmationEmail(restClient, emailAddress, exportBatchId, submission.getSchemeId(),
+                            submissionId);
+                } catch (Exception e) {
+                    logger.error("Could not process message", e);
+                    //update grant_export_batch table to FAILED
+                    GrantExportBatchService.updateGrantExportBatchRecordStatus(restClient, exportBatchId, GrantExportStatus.FAILED);
+                }
             } else {
                 logger.info(
                         String.format("Outstanding exports for export batch %s: %s", exportBatchId, outstandingCount));

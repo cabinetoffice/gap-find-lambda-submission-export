@@ -2,8 +2,11 @@ package gov.cabinetoffice.gap.service;
 
 import gov.cabinetoffice.gap.enums.GrantExportStatus;
 import gov.cabinetoffice.gap.model.AddingS3ObjectKeyDTO;
+import gov.cabinetoffice.gap.model.GrantExportDTO;
 import gov.cabinetoffice.gap.model.OutstandingExportCountDTO;
 import okhttp3.OkHttpClient;
+
+import java.util.List;
 
 public class ExportRecordService {
 
@@ -26,6 +29,13 @@ public class ExportRecordService {
         final String patchEndpoint = "/submissions/" + submissionId + "/export-batch/" + exportId + "/s3-object-key";
 
         RestService.sendPatchRequest(restClient, new AddingS3ObjectKeyDTO(s3ObjectKey), patchEndpoint);
+    }
+
+    public static List<GrantExportDTO> getCompletedExportRecordsByBatchId(OkHttpClient restClient, String exportId)
+            throws Exception {
+        final String getEndpoint = "/export-batch/" + exportId + "/completed";
+
+        return (List<GrantExportDTO>) RestService.sendGetRequest(restClient, null, getEndpoint, GrantExportDTO.class);
     }
 
 }
