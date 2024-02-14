@@ -44,8 +44,10 @@ public class ZipService {
 
     public static void createSuperZip(List<GrantExportDTO> completedGrantExports) throws IOException {
         final List<String> filenames = new ArrayList<>();
-        logger.info("Downloading completed grant export with size: " + completedGrantExports.size());
+        logger.info("Downloading completed grant export with size: {}", completedGrantExports.size());
         for (GrantExportDTO grantExport: completedGrantExports) {
+            logger.info("Looping through completed grant exports");
+            logger.info("Grant export with id: {}", grantExport.getExportBatchId());
             final String location = grantExport.getLocation();
             final String folderNameToRemove = location.split("/")[0];
             final String fileName = location.replace(folderNameToRemove + "/", "").replaceAll(SPECIAL_CHARACTER_REGEX, "_");
