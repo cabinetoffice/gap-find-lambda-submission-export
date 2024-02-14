@@ -44,6 +44,7 @@ public class ZipService {
 
     public static void createSuperZip(List<GrantExportDTO> completedGrantExports) throws IOException {
         final List<String> filenames = new ArrayList<>();
+        logger.error("Downloading completed grant export with size: " + completedGrantExports.size());
         for (GrantExportDTO grantExport: completedGrantExports) {
             final String location = grantExport.getLocation();
             final String folderNameToRemove = location.split("/")[0];
@@ -52,6 +53,7 @@ public class ZipService {
             filenames.add(fileName);
             downloadFile(fileName, SUBMISSION_EXPORTS_BUCKET_NAME);
         }
+        logger.error("Starting to zip completed grant export inside super zip");
         zipFiles(filenames,"");
 
     }
