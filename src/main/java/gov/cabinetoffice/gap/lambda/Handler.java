@@ -77,22 +77,29 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
 
             if (Objects.equals(outstandingCount, 0L)) {
                 ZipService.deleteTmpDirContents();
+                logger.info("Tmp dir cleared before super zip");
                 // TODO should we add status for processing etc?
                 try {
+                    logger.error("Fetching completedGrantExports to create super zip with exportBatchId: " + exportBatchId );
                     final List<GrantExportDTO> completedGrantExports = ExportRecordService.getCompletedExportRecordsByBatchId(restClient, exportBatchId);
 
                     ZipService.createSuperZip(completedGrantExports);
+                    logger.error("Super zip complete");
 
                     final String superZipFilename = HelperUtils.generateFilename(submission.getSchemeName(), ""); // TODO what should we name this
+
+                    logger.error("Starting to upload super zip to s3");
                     String superZipObjectKey = ZipService.uploadZip(submission.getSchemeId(), superZipFilename);
 
                     GrantExportBatchService.addS3ObjectKeyToGrantExportBatchRecord(restClient, exportBatchId, superZipObjectKey);
+                    logger.error("Super zip location updated");
                     GrantExportBatchService.updateGrantExportBatchRecordStatus(restClient, exportBatchId, GrantExportStatus.COMPLETE);
+                    logger.error("Super zip status updated");
 
                     NotifyService.sendConfirmationEmail(restClient, emailAddress, exportBatchId, submission.getSchemeId(),
                             submissionId);
                 } catch (Exception e) {
-                    logger.error("Could not process message", e);
+                    logger.error("Could not process message while trying to create super zip", e);
                     GrantExportBatchService.updateGrantExportBatchRecordStatus(restClient, exportBatchId, GrantExportStatus.FAILED);
                 }
             } else {
