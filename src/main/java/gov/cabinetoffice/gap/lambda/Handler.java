@@ -80,21 +80,22 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
                 logger.info("Tmp dir cleared before super zip");
                 // TODO should we add status for processing etc?
                 try {
-                    logger.error("Fetching completedGrantExports to create super zip with exportBatchId: " + exportBatchId );
+                    logger.info("Fetching completedGrantExports to create super zip with exportBatchId: " + exportBatchId );
                     final List<GrantExportDTO> completedGrantExports = ExportRecordService.getCompletedExportRecordsByBatchId(restClient, exportBatchId);
+                    logger.info("Finished fetching completedGrantExports with size of: " + completedGrantExports.size());
 
                     ZipService.createSuperZip(completedGrantExports);
-                    logger.error("Super zip complete");
+                    logger.info("Super zip complete");
 
                     final String superZipFilename = HelperUtils.generateFilename(submission.getSchemeName(), ""); // TODO what should we name this
 
-                    logger.error("Starting to upload super zip to s3");
+                    logger.info("Starting to upload super zip to s3");
                     String superZipObjectKey = ZipService.uploadZip(submission.getSchemeId(), superZipFilename);
 
                     GrantExportBatchService.addS3ObjectKeyToGrantExportBatchRecord(restClient, exportBatchId, superZipObjectKey);
-                    logger.error("Super zip location updated");
+                    logger.info("Super zip location updated");
                     GrantExportBatchService.updateGrantExportBatchRecordStatus(restClient, exportBatchId, GrantExportStatus.COMPLETE);
-                    logger.error("Super zip status updated");
+                    logger.info("Super zip status updated");
 
                     NotifyService.sendConfirmationEmail(restClient, emailAddress, exportBatchId, submission.getSchemeId(),
                             submissionId);
