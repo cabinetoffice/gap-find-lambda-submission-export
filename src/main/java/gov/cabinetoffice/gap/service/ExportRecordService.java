@@ -1,14 +1,18 @@
 package gov.cabinetoffice.gap.service;
 
 import gov.cabinetoffice.gap.enums.GrantExportStatus;
+import gov.cabinetoffice.gap.lambda.Handler;
 import gov.cabinetoffice.gap.model.AddingS3ObjectKeyDTO;
 import gov.cabinetoffice.gap.model.GrantExportDTO;
 import gov.cabinetoffice.gap.model.OutstandingExportCountDTO;
 import okhttp3.OkHttpClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
 public class ExportRecordService {
+    private static final Logger logger = LoggerFactory.getLogger(Handler.class);
 
     public static void updateExportRecordStatus(OkHttpClient restClient, String exportId, String submissionId, GrantExportStatus newStatus)
             throws Exception {
@@ -34,8 +38,9 @@ public class ExportRecordService {
     public static List<GrantExportDTO> getCompletedExportRecordsByBatchId(OkHttpClient restClient, String exportId)
             throws Exception {
         final String getEndpoint = "/export-batch/" + exportId + "/completed";
+        logger.info("Sending getRequest to {}", getEndpoint);
 
-        return (List<GrantExportDTO>) RestService.sendGetRequest(restClient, null, getEndpoint, GrantExportDTO.class);
+        return  RestService.sendGetRequest(restClient, null, getEndpoint, List.class);
     }
 
 }
