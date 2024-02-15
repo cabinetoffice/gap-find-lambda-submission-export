@@ -53,7 +53,7 @@ public class ZipService {
             final String fileName = location.replace(folderNameToRemove + "/", "").replaceAll(SPECIAL_CHARACTER_REGEX, "_");
 
             filenames.add(fileName);
-            downloadFile(fileName, SUBMISSION_EXPORTS_BUCKET_NAME);
+            downloadFile(location, SUBMISSION_EXPORTS_BUCKET_NAME);
         }
         logger.info("Starting to zip completed grant export inside super zip");
         zipFiles(filenames,"");
@@ -93,6 +93,7 @@ public class ZipService {
     public static List<String> getSubmissionAttachmentFileNames(final AmazonS3 s3Client,
                                                                 final String applicationId,
                                                                 final String submissionId) {
+        //s3://gap-sandbox-attachments/1865/468a45e8-3284-48cf-921d-65c21a257927/14f73b83-02a4-485a-bf0f-92c4ac54b1ea/odt_application_template.odt
         final ListObjectsV2Request req = new ListObjectsV2Request().withBucketName(SUBMISSION_ATTACHMENTS_BUCKET_NAME)
                 .withPrefix(applicationId + "/" + submissionId);
         final ListObjectsV2Result listing = s3Client.listObjectsV2(req);
