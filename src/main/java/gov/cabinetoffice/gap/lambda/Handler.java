@@ -91,11 +91,11 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
                     logger.info("Starting to upload super zip to s3");
                     String superZipObjectKey = ZipService.uploadZip(submission.getSchemeId(), superZipFilename);
 
-                    GrantExportBatchService.updateGrantExportBatchRecordStatus(restClient, exportBatchId, GrantExportStatus.COMPLETE);
-                    logger.info("Super zip status updated");
-
                     GrantExportBatchService.addS3ObjectKeyToGrantExportBatchRecord(restClient, exportBatchId, superZipObjectKey);
                     logger.info("Super zip location updated");
+
+                    GrantExportBatchService.updateGrantExportBatchRecordStatus(restClient, exportBatchId, GrantExportStatus.COMPLETE);
+                    logger.info("Super zip status updated");
 
                     NotifyService.sendConfirmationEmail(restClient, emailAddress, exportBatchId, submission.getSchemeId(),
                             submissionId);
