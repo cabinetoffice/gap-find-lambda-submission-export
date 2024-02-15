@@ -200,6 +200,7 @@
                         <ADMIN_API_SECRET>test-api-secret</ADMIN_API_SECRET>
                         <USER_POOL_ID>testUserPoolId</USER_POOL_ID>
                         <PUBLIC_KEY>MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA1Cg0wsx+v3KKqn9sveTVifxX60m09u96wq00/Ip/gg3g2h5pvpB0sDooC+aOVXIuJGO9f6aiwEqfT8Jkm21rs05ytIa99GmbGBC1a9Tb+JROiK0FG8tqQ2ol3Xfz6ygXlxm83eSTZmpmKi5/AfY5d0n7XXuuqRoYpmkq9jEyxnxN9maCvFQN5gBxlEbfc1mdwfe3for5E/1E7uuFc3M7MqyH/UbZZdMayJItNDU6F7eYF99mD8xh19WWLU9mhlaX2UqYJ8DriWTkSHqRPGgeY7Kr8tuIBgYutJ2BUl1tZsVUSe1R2aDiz5Il9vAS3sbJeAiGE7wFMCYRBst0MTk1kQIDAQAB</PUBLIC_KEY>
+                        <TOPIC_ARN>arn:partition:service:region:account-id:resource-id</TOPIC_ARN>
                     </environmentVariables>
                 </configuration>
             </plugin>

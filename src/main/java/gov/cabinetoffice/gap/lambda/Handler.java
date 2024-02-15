@@ -6,6 +6,8 @@ import com.amazonaws.services.lambda.runtime.events.SQSBatchResponse;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.sns.AmazonSNSClient;
+import com.amazonaws.services.sns.AmazonSNSClientBuilder;
 import gov.cabinetoffice.gap.enums.GrantExportStatus;
 import gov.cabinetoffice.gap.model.GrantExportDTO;
 import gov.cabinetoffice.gap.model.Submission;
@@ -29,7 +31,7 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
     @SneakyThrows
     @Override
     public SQSBatchResponse handleRequest(final SQSEvent event, final Context context) {
-        if(event.getRecords().size() <1) {
+        if (event.getRecords().size() < 1) {
             throw new RuntimeException("No records found in SQS event");
         }
 
@@ -80,7 +82,7 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
                 logger.info("Tmp dir cleared before super zip");
                 // TODO should we add status for processing etc?
                 try {
-                    logger.error("Fetching completedGrantExports to create super zip with exportBatchId: " + exportBatchId );
+                    logger.error("Fetching completedGrantExports to create super zip with exportBatchId: " + exportBatchId);
                     final List<GrantExportDTO> completedGrantExports = ExportRecordService.getCompletedExportRecordsByBatchId(restClient, exportBatchId);
 
                     ZipService.createSuperZip(completedGrantExports);
@@ -105,7 +107,8 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
             } else {
                 logger.info(
                         String.format("Outstanding exports for export batch %s: %s", exportBatchId, outstandingCount));
-                SnsService.failureInExport(submission.getSchemeName(), outstandingCount);
+                // TODO: Does any status change here for grant export?
+                new SnsService((AmazonSNSClient) AmazonSNSClientBuilder.defaultClient()).failureInExport(submission.getSchemeName(), outstandingCount);
             }
 
             // STEP 9 - clear tmp dir as this is preserved between frequent invocations

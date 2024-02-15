@@ -1,7 +1,6 @@
 package gov.cabinetoffice.gap.service;
 
 import com.amazonaws.services.sns.AmazonSNSClient;
-import com.amazonaws.services.sns.AmazonSNSClientBuilder;
 import com.amazonaws.services.sns.model.AmazonSNSException;
 import com.amazonaws.services.sns.model.PublishRequest;
 import com.amazonaws.services.sns.model.PublishResult;
@@ -12,12 +11,15 @@ import lombok.extern.log4j.Log4j2;
 @Log4j2
 public class SnsService {
 
-    private static String publishMessageToTopic(String subject, String body) {
-        try {
-            AmazonSNSClient snsClient = (AmazonSNSClient) AmazonSNSClientBuilder.defaultClient();
+    AmazonSNSClient snsClient;
 
-            //TODO: How do we store config for this lambda
-            final PublishRequest request = new PublishRequest(System.getenv("PLACEHOLDER_TOPIC_ARN"), body, subject);
+    public SnsService (AmazonSNSClient snsClient) {
+        this.snsClient = snsClient;
+    }
+
+    private String publishMessageToTopic(String subject, String body) {
+        try {
+            final PublishRequest request = new PublishRequest(System.getenv("TOPIC_ARN"), body, subject);
             final PublishResult result = snsClient.publish(request);
 
             log.info("Message published to SNS topic");
@@ -29,9 +31,9 @@ public class SnsService {
 
     }
 
-    public static String failureInExport(String grantName, long failureCount) {
+    public String failureInExport(String grantName, long failureCount) {
         //TODO: This copy is subject to change
-        final String subject = "Application download run failed";
+        final String subject = String.format("%s - Application download run errors", grantName);
         final String body = String.format("An application download run for %s has encountered errors. This has caused %s applications to become unavailable to download.", grantName, failureCount);
 
         return publishMessageToTopic(subject, body);

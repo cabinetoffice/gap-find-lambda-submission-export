@@ -7,6 +7,7 @@ import com.amazonaws.services.lambda.runtime.tests.EventLoader;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.PutObjectResult;
+import com.amazonaws.services.sns.AmazonSNSClient;
 import gov.cabinetoffice.gap.enums.GrantExportStatus;
 import gov.cabinetoffice.gap.model.GrantExportDTO;
 import gov.cabinetoffice.gap.service.*;
@@ -16,6 +17,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
 
 import java.io.File;
@@ -41,6 +43,8 @@ public class HandlerTest {
     private static MockedStatic<ExportRecordService> mockedExportService;
     private static MockedStatic<SubmissionService> mockedSubmissionService;
     private static MockedStatic<GrantExportBatchService> mockedGrantExportBatchService;
+    private final AmazonSNSClient mockedSnsClient = Mockito.mock(AmazonSNSClient.class);
+    private final SnsService mockedSnsService = new SnsService(mockedSnsClient);
 
     @BeforeAll
     static void beforeAll() {
@@ -200,7 +204,7 @@ public class HandlerTest {
     }
 
     @Test
-    void ShouldNotSendEmailIfThereIsStillOutstandingExports() {
+    void ShouldNotSendConfirmationEmailIfThereIsStillOutstandingExports() {
         final SQSEvent event = EventLoader.loadSQSEvent("testEvent.json");
         final Context contextMock = createContext();
         final String submissionId = event.getRecords().get(0).getMessageAttributes().get("submissionId")
@@ -226,6 +230,52 @@ public class HandlerTest {
 
         try (final MockedStatic<OdtService> ignored = mockStatic(OdtService.class);
              final MockedStatic<ZipService> mockedZipService = mockStatic(ZipService.class);
+             final MockedStatic<NotifyService> mockedNotifyService = mockStatic(NotifyService.class)) {
+
+            mockedZipService.when(() -> ZipService.createZip(any(), anyString(), anyString(), anyString()))
+                    .thenAnswer((Answer<Void>) invocation -> null);
+
+            mockedZipService.when(() -> ZipService.uploadZip(eq(V1_SUBMISSION_WITH_ESSENTIAL_SECTION.getGapId()), any()))
+                    .thenReturn(V1_SUBMISSION_WITH_ESSENTIAL_SECTION.getGapId() + "/mock_filename.zip");
+
+            Handler handler = new Handler();
+            handler.handleRequest(event, contextMock);
+
+            mockedNotifyService.verify(
+                    () -> NotifyService.sendConfirmationEmail(any(), anyString(), anyString(), anyString(), anyString()),
+                    never());
+
+        }
+    }
+
+    @Test
+    void ShouldSendOutstandingErrorsEmailIfThereAreStillOutstandingExportErrors() {
+        final SQSEvent event = EventLoader.loadSQSEvent("testEvent.json");
+        final Context contextMock = createContext();
+        final String submissionId = event.getRecords().get(0).getMessageAttributes().get("submissionId")
+                .getStringValue();
+        final String exportBatchId = event.getRecords().get(0).getMessageAttributes().get("exportBatchId")
+                .getStringValue();
+
+        when(s3client.putObject(anyString(), anyString(), any(File.class))).thenReturn(new PutObjectResult());
+
+        mockedSubmissionService.when(() -> SubmissionService.getSubmissionData(any(), eq(exportBatchId), eq(submissionId)))
+                .thenReturn(V1_SUBMISSION_WITH_ESSENTIAL_SECTION);
+
+        mockedHelperUtils
+                .when(() -> HelperUtils.generateFilename("test org name", V1_SUBMISSION_WITH_ESSENTIAL_SECTION.getGapId()))
+                .thenCallRealMethod();
+
+        when(s3client.putObject(anyString(), anyString(), any(File.class))).thenReturn(new PutObjectResult());
+
+        mockedHelperUtils.when(() -> HelperUtils.getRedirectUrl(SCHEME_ID, exportBatchId))
+                .thenReturn("test.co.uk/testing");
+
+        mockedExportService.when(() -> ExportRecordService.getOutstandingExportsCount(any(), eq(exportBatchId))).thenReturn(10L);
+
+        try (final MockedStatic<OdtService> ignored = mockStatic(OdtService.class);
+             final MockedStatic<ZipService> mockedZipService = mockStatic(ZipService.class);
+
              final MockedStatic<NotifyService> mockedNotifyService = mockStatic(NotifyService.class)) {
 
             mockedZipService.when(() -> ZipService.createZip(any(), anyString(), anyString(), anyString()))
