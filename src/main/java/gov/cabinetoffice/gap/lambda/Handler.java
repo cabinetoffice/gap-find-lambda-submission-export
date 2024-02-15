@@ -9,7 +9,7 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.sns.AmazonSNSClient;
 import com.amazonaws.services.sns.AmazonSNSClientBuilder;
 import gov.cabinetoffice.gap.enums.GrantExportStatus;
-import gov.cabinetoffice.gap.model.GrantExportDTO;
+import gov.cabinetoffice.gap.model.GrantExportListDTO;
 import gov.cabinetoffice.gap.model.Submission;
 import gov.cabinetoffice.gap.service.*;
 import gov.cabinetoffice.gap.utils.HelperUtils;
@@ -18,7 +18,6 @@ import okhttp3.OkHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -82,21 +81,23 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
                 logger.info("Tmp dir cleared before super zip");
                 // TODO should we add status for processing etc?
                 try {
-                    logger.error("Fetching completedGrantExports to create super zip with exportBatchId: " + exportBatchId);
-                    final List<GrantExportDTO> completedGrantExports = ExportRecordService.getCompletedExportRecordsByBatchId(restClient, exportBatchId);
+                    logger.info("Fetching completedGrantExports to create super zip with exportBatchId: " + exportBatchId );
+                    final GrantExportListDTO completedGrantExports = ExportRecordService.getCompletedExportRecordsByBatchId(restClient, exportBatchId);
+                    logger.info("Finished fetching completedGrantExports with size of: " + completedGrantExports.getGrantExports().size());
 
-                    ZipService.createSuperZip(completedGrantExports);
-                    logger.error("Super zip complete");
+                    ZipService.createSuperZip(completedGrantExports.getGrantExports());
+                    logger.info("Super zip complete");
 
                     final String superZipFilename = HelperUtils.generateFilename(submission.getSchemeName(), ""); // TODO what should we name this
 
-                    logger.error("Starting to upload super zip to s3");
+                    logger.info("Starting to upload super zip to s3");
                     String superZipObjectKey = ZipService.uploadZip(submission.getSchemeId(), superZipFilename);
 
-                    GrantExportBatchService.addS3ObjectKeyToGrantExportBatchRecord(restClient, exportBatchId, superZipObjectKey);
-                    logger.error("Super zip location updated");
                     GrantExportBatchService.updateGrantExportBatchRecordStatus(restClient, exportBatchId, GrantExportStatus.COMPLETE);
-                    logger.error("Super zip status updated");
+                    logger.info("Super zip status updated");
+
+                    GrantExportBatchService.addS3ObjectKeyToGrantExportBatchRecord(restClient, exportBatchId, superZipObjectKey);
+                    logger.info("Super zip location updated");
 
                     NotifyService.sendConfirmationEmail(restClient, emailAddress, exportBatchId, submission.getSchemeId(),
                             submissionId);

@@ -44,16 +44,15 @@ public class ZipService {
 
     public static void createSuperZip(List<GrantExportDTO> completedGrantExports) throws IOException {
         final List<String> filenames = new ArrayList<>();
-        logger.error("Downloading completed grant export with size: " + completedGrantExports.size());
+        logger.info("Downloading completed grant export with size: {}", completedGrantExports.size());
         for (GrantExportDTO grantExport: completedGrantExports) {
+            logger.info("Looping through completed grant exports");
+            logger.info("Grant export with id: {}", grantExport.getExportBatchId());
             final String location = grantExport.getLocation();
-            final String folderNameToRemove = location.split("/")[0];
-            final String fileName = location.replace(folderNameToRemove + "/", "").replaceAll(SPECIAL_CHARACTER_REGEX, "_");
-
-            filenames.add(fileName);
-            downloadFile(fileName, SUBMISSION_EXPORTS_BUCKET_NAME);
+            filenames.add(location);
+            downloadFile(location, SUBMISSION_EXPORTS_BUCKET_NAME);
         }
-        logger.error("Starting to zip completed grant export inside super zip");
+        logger.info("Starting to zip completed grant export inside super zip");
         zipFiles(filenames,"");
 
     }
@@ -91,6 +90,7 @@ public class ZipService {
     public static List<String> getSubmissionAttachmentFileNames(final AmazonS3 s3Client,
                                                                 final String applicationId,
                                                                 final String submissionId) {
+        //s3://gap-sandbox-attachments/1865/468a45e8-3284-48cf-921d-65c21a257927/14f73b83-02a4-485a-bf0f-92c4ac54b1ea/odt_application_template.odt
         final ListObjectsV2Request req = new ListObjectsV2Request().withBucketName(SUBMISSION_ATTACHMENTS_BUCKET_NAME)
                 .withPrefix(applicationId + "/" + submissionId);
         final ListObjectsV2Result listing = s3Client.listObjectsV2(req);

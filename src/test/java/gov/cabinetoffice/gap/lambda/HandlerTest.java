@@ -10,6 +10,7 @@ import com.amazonaws.services.s3.model.PutObjectResult;
 import com.amazonaws.services.sns.AmazonSNSClient;
 import gov.cabinetoffice.gap.enums.GrantExportStatus;
 import gov.cabinetoffice.gap.model.GrantExportDTO;
+import gov.cabinetoffice.gap.model.GrantExportListDTO;
 import gov.cabinetoffice.gap.service.*;
 import gov.cabinetoffice.gap.testData.TestContext;
 import gov.cabinetoffice.gap.utils.HelperUtils;
@@ -119,8 +120,9 @@ public class HandlerTest {
 
         final String expectedFilename = "test_org_name_GAP_LL_20220927_00001";
 
-        final List<GrantExportDTO> completedGrantExportsMock = Collections.singletonList(new GrantExportDTO(
-                UUID.randomUUID(),
+        final UUID exportId = UUID.randomUUID();
+        final List<GrantExportDTO> grantExports = Collections.singletonList(new GrantExportDTO(
+                exportId,
                 UUID.randomUUID(),
                 1,
                 GrantExportStatus.COMPLETE,
@@ -129,6 +131,7 @@ public class HandlerTest {
                 1,
                 null,
                 "location.zip"));
+        final GrantExportListDTO completedGrantExportsMock = new GrantExportListDTO(exportId, grantExports);
 
         mockedExportService.when(() -> ExportRecordService.getCompletedExportRecordsByBatchId(any(), anyString()))
                 .thenReturn(completedGrantExportsMock);
@@ -154,7 +157,7 @@ public class HandlerTest {
             mockedZipService.when(() -> ZipService.createZip(any(), anyString(), anyString(), anyString()))
                     .thenAnswer((Answer<Void>) invocation -> null);
 
-            mockedZipService.when(() -> ZipService.createSuperZip(completedGrantExportsMock))
+            mockedZipService.when(() -> ZipService.createSuperZip(completedGrantExportsMock.getGrantExports()))
                     .thenAnswer((Answer<Void>) invocation -> null);
 
             final String mockS3Key = V1_SUBMISSION_WITH_ESSENTIAL_SECTION.getGapId() + "/mock_filename.zip";
