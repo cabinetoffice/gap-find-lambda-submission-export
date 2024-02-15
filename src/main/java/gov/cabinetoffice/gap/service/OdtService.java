@@ -39,7 +39,7 @@ public class OdtService {
     private static final String APPLICANT_ORG_CHARITY_NUMBER = "APPLICANT_ORG_CHARITY_NUMBER";
     private static final String APPLICANT_ORG_COMPANIES_HOUSE = "APPLICANT_ORG_COMPANIES_HOUSE";
     private static final String APPLICANT_AMOUNT = "APPLICANT_AMOUNT";
-    private static final String BENEFICIARY_LOCATION = "BENEFICIARY_LOCATION";
+    private static final String BENEFICIARY_LOCATION = "BENEFITIARY_LOCATION";
     private static final String APPLICANT_ORG_TYPE_INDIVIDUAL = "I am applying as an individual";
     private static final String Heading_20_1 = "Heading_20_1";
     private static final String Heading_20_2 = "Heading_20_2";
@@ -47,6 +47,8 @@ public class OdtService {
     private static final String Text_20_1 = "Text_20_1";
     private static final String Text_20_2 = "Text_20_2";
     private static final String Text_20_3 = "Text_20_3";
+
+    private static final String UUID_REGEX = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 
     OdtService() {
     }
@@ -86,15 +88,15 @@ public class OdtService {
                 populateRequiredChecksSection(submission, documentText, contentDom,
                         requiredCheckSection, fundingSectionName, odt);
 
-                addPageBreak(contentDom, odt);
                 AtomicInteger count = new AtomicInteger(3); //2 sections already added
-                documentText.appendChild(new OdfTextParagraph(contentDom)
-                        .addStyledContentWhitespace(Heading_20_2, "Custom sections"));
+
+                if(submission.getSections().stream().anyMatch(section -> section.getSectionId().matches(UUID_REGEX))) {
+                    addPageBreak(contentDom, odt);
+                    documentText.appendChild(new OdfTextParagraph(contentDom)
+                            .addStyledContentWhitespace(Heading_20_2, "Custom sections"));
+                }
                 submission.getSections().forEach(section -> {
-                    if (!Objects.equals(section.getSectionId(), ELIGIBILITY_SECTION_ID) &&
-                            !Objects.equals(section.getSectionId(), ESSENTIAL_SECTION_ID) &&
-                            !Objects.equals(section.getSectionId(), ORGANISATION_DETAILS_SECTION_ID) &&
-                            !Objects.equals(section.getSectionId(), FUNDING_DETAILS_SECTION_ID)) {
+                    if (section.getSectionId().matches(UUID_REGEX)) {
                         populateQuestionResponseTable(count, section, documentText, contentDom, odt);
                     }
                 });
@@ -132,25 +134,29 @@ public class OdtService {
         OdfTable table;
 
         if(isIndividual){
-            table = OdfTable.newTable(odt, 3, 2);
+            table = OdfTable.newTable(odt, 4, 2);
             table.getRowByIndex(0).getCellByIndex(0).setStringValue("Lead Applicant");
             table.getRowByIndex(0).getCellByIndex(1).setStringValue(email);
-            table.getRowByIndex(1).getCellByIndex(0).setStringValue("Applying for");
-            table.getRowByIndex(1).getCellByIndex(1).setStringValue(submission.getSchemeName());
-            table.getRowByIndex(2).getCellByIndex(0).setStringValue("Submitted on");
-            table.getRowByIndex(2).getCellByIndex(1).setStringValue(Objects.equals(null,
-                    submission.getSubmittedDate())
-                    ? "Not yet submitted" : String.valueOf(submission.getSubmittedDate()));
-        } else {
-            table = OdfTable.newTable(odt, 4, 2);
-            table.getRowByIndex(0).getCellByIndex(0).setStringValue("Organisation");
-            table.getRowByIndex(0).getCellByIndex(1).setStringValue(submission.getLegalName());
-            table.getRowByIndex(1).getCellByIndex(0).setStringValue("Lead Applicant");
-            table.getRowByIndex(1).getCellByIndex(1).setStringValue(email);
+            table.getRowByIndex(1).getCellByIndex(0).setStringValue("GAP ID");
+            table.getRowByIndex(1).getCellByIndex(1).setStringValue(submission.getGapId());
             table.getRowByIndex(2).getCellByIndex(0).setStringValue("Applying for");
             table.getRowByIndex(2).getCellByIndex(1).setStringValue(submission.getSchemeName());
             table.getRowByIndex(3).getCellByIndex(0).setStringValue("Submitted on");
             table.getRowByIndex(3).getCellByIndex(1).setStringValue(Objects.equals(null,
+                    submission.getSubmittedDate())
+                    ? "Not yet submitted" : String.valueOf(submission.getSubmittedDate()));
+        } else {
+            table = OdfTable.newTable(odt, 5, 2);
+            table.getRowByIndex(0).getCellByIndex(0).setStringValue("Organisation");
+            table.getRowByIndex(0).getCellByIndex(1).setStringValue(submission.getLegalName());
+            table.getRowByIndex(1).getCellByIndex(0).setStringValue("Lead Applicant");
+            table.getRowByIndex(1).getCellByIndex(1).setStringValue(email);
+            table.getRowByIndex(2).getCellByIndex(0).setStringValue("GAP ID");
+            table.getRowByIndex(2).getCellByIndex(1).setStringValue(submission.getGapId());
+            table.getRowByIndex(3).getCellByIndex(0).setStringValue("Applying for");
+            table.getRowByIndex(3).getCellByIndex(1).setStringValue(submission.getSchemeName());
+            table.getRowByIndex(4).getCellByIndex(0).setStringValue("Submitted on");
+            table.getRowByIndex(4).getCellByIndex(1).setStringValue(Objects.equals(null,
                     submission.getSubmittedDate())
                     ? "Not yet submitted" : String.valueOf(submission.getSubmittedDate()));
 

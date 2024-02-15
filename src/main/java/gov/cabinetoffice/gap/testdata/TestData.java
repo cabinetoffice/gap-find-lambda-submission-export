@@ -431,7 +431,7 @@ public class TestData {
 
     public static final SubmissionSection CUSTOM_SECTION_SUBMISSION = SubmissionSection
             .builder()
-            .sectionId("CUSTOM")
+            .sectionId("ce43cfe5-53d1-4a69-8a0a-6fce142f87d5")
             .sectionTitle("Custom section")
             .sectionStatus(SubmissionSectionStatus.COMPLETED)
             .questions(List.of(OPTIONAL_YES_NO_QUESTION, OPTIONAL_DATE_QUESTION, OPTIONAL_MULTISELECT_QUESTION, OPTIONAL_FILE_UPLOAD_QUESTION))
@@ -527,6 +527,7 @@ public class TestData {
             .legalName("Test Org Name v2")
             .schemeName("v2Scheme Name")
             .gapId("GAP-LL-20220927-00001")
+            .email("anexamplemail@gov.uk")
             .submittedDate(Instant.parse("2022-02-15T18:35:24.00Z"))
             .sections(V2_SUBMISSION_SECTIONS_LIST_LIMITED_WITH_CC_AND_CH)
             .schemeVersion(2)
