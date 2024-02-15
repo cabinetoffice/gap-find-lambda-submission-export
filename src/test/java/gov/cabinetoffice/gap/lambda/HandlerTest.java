@@ -251,6 +251,7 @@ public class HandlerTest {
         }
     }
 
+    // TODO: This needs reworked to fit SnsService
     @Test
     void ShouldSendOutstandingErrorsEmailIfThereAreStillOutstandingExportErrors() {
         final SQSEvent event = EventLoader.loadSQSEvent("testEvent.json");
