@@ -52,7 +52,7 @@ public class ZipService {
             final String folderNameToRemove = location.split("/")[0];
             final String fileName = location.replace(folderNameToRemove + "/", "").replaceAll(SPECIAL_CHARACTER_REGEX, "_");
 
-            filenames.add(fileName);
+            filenames.add(location);
             downloadFile(location, SUBMISSION_EXPORTS_BUCKET_NAME);
         }
         logger.info("Starting to zip completed grant export inside super zip");
