@@ -23,6 +23,8 @@ import org.odftoolkit.odfdom.incubator.doc.text.OdfTextHeading;
 import org.odftoolkit.odfdom.incubator.doc.text.OdfTextParagraph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -277,7 +279,7 @@ public class OdtService {
             }
             case Date -> {
                 table.getRowByIndex(questionIndex.get()).getCellByIndex(0).setStringValue(question.getFieldTitle());
-                if (question.getMultiResponse() != null) {
+                if (question.getMultiResponse() != null && !Arrays.stream(question.getMultiResponse()).allMatch(String::isEmpty)) {
                     final String date = String.join("-", question.getMultiResponse());
                     table.getRowByIndex(questionIndex.get()).getCellByIndex(1).setStringValue(date);
                 } else {
