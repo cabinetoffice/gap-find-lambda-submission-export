@@ -49,9 +49,6 @@ public class ZipService {
             logger.info("Looping through completed grant exports");
             logger.info("Grant export with id: {}", grantExport.getExportBatchId());
             final String location = grantExport.getLocation();
-            final String folderNameToRemove = location.split("/")[0];
-            final String fileName = location.replace(folderNameToRemove + "/", "").replaceAll(SPECIAL_CHARACTER_REGEX, "_");
-
             filenames.add(location);
             downloadFile(location, SUBMISSION_EXPORTS_BUCKET_NAME);
         }
