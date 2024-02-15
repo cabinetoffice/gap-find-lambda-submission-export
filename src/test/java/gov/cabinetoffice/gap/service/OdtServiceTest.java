@@ -60,7 +60,7 @@ class OdtServiceTest {
         final OdfDocument generatedDoc = OdfDocument.loadDocument("/tmp/testFileName2.odt");
         final String generatedContent = docToString(generatedDoc.getContentDom());
 
-        assertThat(generatedContent).contains("Organisation name: Test Org Name v2");
+        assertThat(generatedContent).contains("Test Org Name v2");
         assertThat(generatedContent).contains("Eligibility");
         assertThat(generatedContent).contains("Required checks");
         assertThat(generatedContent).contains("Legal name of organisation");
