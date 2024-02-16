@@ -17,7 +17,7 @@ public class GrantExportBatchService {
         final String patchEndpoint = "/grant-export-batch/" + exportId + "/status";
         try{
             logger.info("Sending patch request to {} to update status to: {}", patchEndpoint, newStatus.toString());
-            RestService.sendPatchRequest(restClient, "\"" + newStatus.toString() + "\"", patchEndpoint);
+            RestService.sendPatchRequest(restClient, newStatus, patchEndpoint);
         }
         catch (Exception e) {
             logger.error("Unable to send patch request to update status to {} with error message {}", newStatus.toString(), e);
