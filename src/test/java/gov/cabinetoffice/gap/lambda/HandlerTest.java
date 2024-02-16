@@ -8,6 +8,7 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.PutObjectResult;
 import com.amazonaws.services.sns.AmazonSNSClient;
+import com.amazonaws.services.sns.AmazonSNSClientBuilder;
 import gov.cabinetoffice.gap.enums.GrantExportStatus;
 import gov.cabinetoffice.gap.model.GrantExportDTO;
 import gov.cabinetoffice.gap.model.GrantExportListDTO;
@@ -18,7 +19,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
-import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
 
 import java.io.File;
@@ -44,8 +44,8 @@ public class HandlerTest {
     private static MockedStatic<ExportRecordService> mockedExportService;
     private static MockedStatic<SubmissionService> mockedSubmissionService;
     private static MockedStatic<GrantExportBatchService> mockedGrantExportBatchService;
-    private final AmazonSNSClient mockedSnsClient = Mockito.mock(AmazonSNSClient.class);
-    private final SnsService mockedSnsService = new SnsService(mockedSnsClient);
+    private static MockedStatic<AmazonSNSClientBuilder> mockedSnsBuilder;
+    private static AmazonSNSClient mockedSnsClient;
 
     @BeforeAll
     static void beforeAll() {
@@ -56,6 +56,8 @@ public class HandlerTest {
         mockedExportService = mockStatic(ExportRecordService.class);
         mockedSubmissionService = mockStatic(SubmissionService.class);
         mockedGrantExportBatchService = mockStatic(GrantExportBatchService.class);
+        mockedSnsClient = mock(AmazonSNSClient.class);
+        mockedSnsBuilder = mockStatic(AmazonSNSClientBuilder.class);
     }
 
     @AfterAll
@@ -65,6 +67,7 @@ public class HandlerTest {
         mockedExportService.close();
         mockedSubmissionService.close();
         mockedGrantExportBatchService.close();
+        mockedSnsBuilder.close();
     }
 
     private Context createContext() {
@@ -251,7 +254,6 @@ public class HandlerTest {
         }
     }
 
-    // TODO: This needs reworked to fit SnsService
     @Test
     void ShouldSendOutstandingErrorsEmailIfThereAreStillOutstandingExportErrors() {
         final SQSEvent event = EventLoader.loadSQSEvent("testEvent.json");
@@ -262,6 +264,8 @@ public class HandlerTest {
                 .getStringValue();
 
         when(s3client.putObject(anyString(), anyString(), any(File.class))).thenReturn(new PutObjectResult());
+
+        mockedSnsBuilder.when(AmazonSNSClientBuilder::defaultClient).thenReturn(mockedSnsClient);
 
         mockedSubmissionService.when(() -> SubmissionService.getSubmissionData(any(), eq(exportBatchId), eq(submissionId)))
                 .thenReturn(V1_SUBMISSION_WITH_ESSENTIAL_SECTION);
@@ -294,6 +298,8 @@ public class HandlerTest {
             mockedNotifyService.verify(
                     () -> NotifyService.sendConfirmationEmail(any(), anyString(), anyString(), anyString(), anyString()),
                     never());
+
+            verify(mockedSnsClient).publish(any());
 
         }
     }
