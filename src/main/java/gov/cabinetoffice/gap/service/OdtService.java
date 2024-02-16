@@ -34,6 +34,7 @@ public class OdtService {
     private static final String APPLICANT_AMOUNT = "APPLICANT_AMOUNT";
     private static final String BENEFITIARY_LOCATION = "BENEFITIARY_LOCATION";
     private static final String APPLICANT_ORG_TYPE_INDIVIDUAL = "I am applying as an individual";
+    private static final String APPLICANT_ORG_TYPE_LOCAL_AUTHORITY = "Local authority";
 
     OdtService() {
     }
@@ -207,7 +208,9 @@ public class OdtService {
         OdfTable odfTable = OdfTable.newTable(documentText, 7, 2);
 
         final String orgType = section.getQuestionById(APPLICANT_TYPE).getResponse();
-        final Boolean isIndividual = Objects.equals(orgType, APPLICANT_ORG_TYPE_INDIVIDUAL);
+        final boolean isIndividual = Objects.equals(orgType, APPLICANT_ORG_TYPE_INDIVIDUAL);
+
+        final boolean isLocalAuthority = Objects.equals(orgType, APPLICANT_ORG_TYPE_LOCAL_AUTHORITY);
 
         final String orgNameHeading = isIndividual ? "Applicant name" : "Legal name of organisation";
         odfTable.getRowByIndex(0).getCellByIndex(0).setStringValue(orgNameHeading);
@@ -241,10 +244,10 @@ public class OdtService {
                 .setStringValue(email);
 
         Integer index = 8;
-        final Boolean hasCharityCommissionNumber = section
+        final boolean hasCharityCommissionNumber = section
                 .mayGetQuestionById(APPLICANT_ORG_CHARITY_NUMBER)
                 .isPresent();
-        if (hasCharityCommissionNumber) {
+        if (hasCharityCommissionNumber && !isIndividual && !isLocalAuthority) {
             odfTable.getRowByIndex(index)
                     .getCellByIndex(0)
                     .setStringValue("Charities Commission number if the organisation has one (if blank, number has not been entered)");
@@ -258,10 +261,10 @@ public class OdtService {
             index++;
         }
 
-        final Boolean hasCompaniesHouseNumber = section
+        final boolean hasCompaniesHouseNumber = section
                 .mayGetQuestionById(APPLICANT_ORG_COMPANIES_HOUSE)
                 .isPresent();
-        if (hasCompaniesHouseNumber) {
+        if (hasCompaniesHouseNumber && !isIndividual && !isLocalAuthority) {
             odfTable.getRowByIndex(index)
                     .getCellByIndex(0)
                     .setStringValue("Companies House number if the organisation has one (if blank, number has not been entered)");
