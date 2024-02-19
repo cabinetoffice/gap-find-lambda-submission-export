@@ -76,26 +76,21 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
 
             if (Objects.equals(outstandingCount, 0L)) {
                 ZipService.deleteTmpDirContents();
-                logger.info("Tmp dir cleared before super zip");
-                // TODO should we add status for processing etc?
+                logger.info("Tmp dir cleared before creating super zip");
                 try {
-                    logger.info("Fetching completedGrantExports to create super zip with exportBatchId: " + exportBatchId );
+                    GrantExportBatchService.updateGrantExportBatchRecordStatus(restClient, exportBatchId, GrantExportStatus.PROCESSING);
+
                     final GrantExportListDTO completedGrantExports = ExportRecordService.getCompletedExportRecordsByBatchId(restClient, exportBatchId);
-                    logger.info("Finished fetching completedGrantExports with size of: " + completedGrantExports.getGrantExports().size());
+                    logger.info("Finished fetching completedGrantExports with size of: {}", completedGrantExports.getGrantExports().size());
 
                     ZipService.createSuperZip(completedGrantExports.getGrantExports());
-                    logger.info("Super zip complete");
 
-                    final String superZipFilename = HelperUtils.generateFilename(submission.getSchemeName(), ""); // TODO what should we name this
+                    final String superZipFilename = HelperUtils.generateFilename(submission.getSchemeName(), "");
 
-                    logger.info("Starting to upload super zip to s3");
-                    String superZipObjectKey = ZipService.uploadZip(submission.getSchemeId(), superZipFilename);
+                    final String superZipObjectKey = ZipService.uploadZip(submission.getSchemeId() + "/" + exportBatchId, superZipFilename);
 
                     GrantExportBatchService.addS3ObjectKeyToGrantExportBatchRecord(restClient, exportBatchId, superZipObjectKey);
-                    logger.info("Super zip location updated");
-
                     GrantExportBatchService.updateGrantExportBatchRecordStatus(restClient, exportBatchId, GrantExportStatus.COMPLETE);
-                    logger.info("Super zip status updated");
 
                     NotifyService.sendConfirmationEmail(restClient, emailAddress, exportBatchId, submission.getSchemeId(),
                             submissionId);
