@@ -48,4 +48,9 @@ public class ExportRecordService {
         return RestService.sendGetRequest(restClient, null, getEndpoint, FailedExportCountDTO.class).getFailedCount();
     }
 
+    public static long getRemainingExportsCount(OkHttpClient restClient, String exportId) throws Exception {
+        final String getEndpoint = "/export-batch/" + exportId + "/remainingCount";
+        return RestService.sendGetRequest(restClient, null, getEndpoint, OutstandingExportCountDTO.class).getOutstandingCount();
+    }
+
 }

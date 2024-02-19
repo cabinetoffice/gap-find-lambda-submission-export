@@ -40,7 +40,6 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
         final String emailAddress = messageAttributes.get("emailAddress").getStringValue();
         final String exportBatchId = messageAttributes.get("exportBatchId").getStringValue();
         final String applicationId = messageAttributes.get("applicationId").getStringValue();
-        Long outstandingCount;
         String schemeName = "";
 
         try {
@@ -77,7 +76,7 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
             ExportRecordService.updateExportRecordStatus(restClient, exportBatchId, submissionId, GrantExportStatus.COMPLETE);
 
             // STEP 7 - if final submission, email admin
-            outstandingCount = ExportRecordService.getOutstandingExportsCount(restClient, exportBatchId);
+            final Long outstandingCount = ExportRecordService.getOutstandingExportsCount(restClient, exportBatchId);
 
             if (Objects.equals(outstandingCount, 0L)) {
                 ZipService.deleteTmpDirContents();
@@ -120,8 +119,9 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
             logger.error("Could not process message", e);
             ExportRecordService.updateExportRecordStatus(restClient, exportBatchId, submissionId, GrantExportStatus.FAILED);
         } finally {
-            outstandingCount = ExportRecordService.getOutstandingExportsCount(restClient, exportBatchId);
-            if(Objects.equals(outstandingCount, 0L)) {
+            // TODO replace existing getOutstandingExportsCount with this once feature flag is off
+            final Long remainingExports = ExportRecordService.getRemainingExportsCount(restClient, exportBatchId);
+            if(Objects.equals(remainingExports, 0L)) {
                 final Long failedSubmissionsCount = ExportRecordService.getFailedExportsCount(restClient, exportBatchId);;
                 if(failedSubmissionsCount > 0) {
                     new SnsService((AmazonSNSClient) AmazonSNSClientBuilder.defaultClient())
