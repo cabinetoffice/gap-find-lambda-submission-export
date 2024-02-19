@@ -81,7 +81,6 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
             if (Objects.equals(outstandingCount, 0L)) {
                 ZipService.deleteTmpDirContents();
                 logger.info("Tmp dir cleared before super zip");
-                // TODO should we add status for processing etc?
                 try {
                     logger.info("Fetching completedGrantExports to create super zip with exportBatchId: " + exportBatchId );
                     final GrantExportListDTO completedGrantExports = ExportRecordService.getCompletedExportRecordsByBatchId(restClient, exportBatchId);
@@ -90,7 +89,7 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
                     ZipService.createSuperZip(completedGrantExports.getGrantExports());
                     logger.info("Super zip complete");
 
-                    final String superZipFilename = HelperUtils.generateFilename(submission.getSchemeName(), ""); // TODO what should we name this
+                    final String superZipFilename = HelperUtils.generateFilename(submission.getSchemeName(), "");
 
                     logger.info("Starting to upload super zip to s3");
                     String superZipObjectKey = ZipService.uploadZip(submission.getSchemeId(), superZipFilename);
