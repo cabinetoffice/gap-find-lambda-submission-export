@@ -9,6 +9,8 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.PutObjectResult;
 import com.amazonaws.services.sns.AmazonSNSClient;
 import com.amazonaws.services.sns.AmazonSNSClientBuilder;
+import com.amazonaws.services.sns.model.PublishRequest;
+import com.amazonaws.services.sns.model.PublishResult;
 import gov.cabinetoffice.gap.enums.GrantExportStatus;
 import gov.cabinetoffice.gap.model.GrantExportDTO;
 import gov.cabinetoffice.gap.model.GrantExportListDTO;
@@ -255,53 +257,27 @@ public class HandlerTest {
     }
 
     @Test
-    void ShouldSendOutstandingErrorsEmailIfThereAreStillOutstandingExportErrors() {
+    void ShouldSendOutstandingErrorsEmailIfThereAreStillOutstandingExportErrors() throws Exception {
         final SQSEvent event = EventLoader.loadSQSEvent("testEvent.json");
         final Context contextMock = createContext();
-        final String submissionId = event.getRecords().get(0).getMessageAttributes().get("submissionId")
-                .getStringValue();
         final String exportBatchId = event.getRecords().get(0).getMessageAttributes().get("exportBatchId")
                 .getStringValue();
+        final PublishResult mockResult = new PublishResult().withMessageId("MESSAGE_ID");
 
-        when(s3client.putObject(anyString(), anyString(), any(File.class))).thenReturn(new PutObjectResult());
+        when(SubmissionService.getSubmissionData(any(), anyString(), anyString())).thenThrow(new RuntimeException());
+        mockedExportService.when(() -> ExportRecordService.getRemainingExportsCount(any(), eq(exportBatchId))).thenReturn(0L);
+        mockedExportService.when(() -> ExportRecordService.getFailedExportsCount(any(), eq(exportBatchId))).thenReturn(2L);
 
         mockedSnsBuilder.when(AmazonSNSClientBuilder::defaultClient).thenReturn(mockedSnsClient);
+        when(mockedSnsClient.publish(any(PublishRequest.class))).thenReturn(mockResult);
 
-        mockedSubmissionService.when(() -> SubmissionService.getSubmissionData(any(), eq(exportBatchId), eq(submissionId)))
-                .thenReturn(V1_SUBMISSION_WITH_ESSENTIAL_SECTION);
+        Handler handler = new Handler();
+        handler.handleRequest(event, contextMock);
 
-        mockedHelperUtils
-                .when(() -> HelperUtils.generateFilename("test org name", V1_SUBMISSION_WITH_ESSENTIAL_SECTION.getGapId()))
-                .thenCallRealMethod();
-
-        when(s3client.putObject(anyString(), anyString(), any(File.class))).thenReturn(new PutObjectResult());
-
-        mockedHelperUtils.when(() -> HelperUtils.getRedirectUrl(SCHEME_ID, exportBatchId))
-                .thenReturn("test.co.uk/testing");
-
-        mockedExportService.when(() -> ExportRecordService.getOutstandingExportsCount(any(), eq(exportBatchId))).thenReturn(10L);
-
-        try (final MockedStatic<OdtService> ignored = mockStatic(OdtService.class);
-             final MockedStatic<ZipService> mockedZipService = mockStatic(ZipService.class);
-
-             final MockedStatic<NotifyService> mockedNotifyService = mockStatic(NotifyService.class)) {
-
-            mockedZipService.when(() -> ZipService.createZip(any(), anyString(), anyString(), anyString()))
-                    .thenAnswer((Answer<Void>) invocation -> null);
-
-            mockedZipService.when(() -> ZipService.uploadZip(eq(V1_SUBMISSION_WITH_ESSENTIAL_SECTION.getGapId()), any()))
-                    .thenReturn(V1_SUBMISSION_WITH_ESSENTIAL_SECTION.getGapId() + "/mock_filename.zip");
-
-            Handler handler = new Handler();
-            handler.handleRequest(event, contextMock);
-
-            mockedNotifyService.verify(
-                    () -> NotifyService.sendConfirmationEmail(any(), anyString(), anyString(), anyString(), anyString()),
-                    never());
-
-            verify(mockedSnsClient).publish(any());
-
-        }
+        verify(mockedSnsClient).publish(any());
+        mockedExportService.verify(() -> ExportRecordService.getRemainingExportsCount(any(), eq(exportBatchId)), atLeastOnce());
+        mockedExportService.verify(() -> ExportRecordService.getFailedExportsCount(any(), eq(exportBatchId)), atLeastOnce()
+        );
     }
 
 }
