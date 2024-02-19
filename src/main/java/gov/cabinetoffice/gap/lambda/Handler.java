@@ -77,6 +77,7 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
             final Long outstandingCount = ExportRecordService.getOutstandingExportsCount(restClient, exportBatchId);
 
             if (Objects.equals(outstandingCount, 0L)) {
+                final Long failedSubmissionsCount = ExportRecordService.getFailedExportsCount(restClient, exportBatchId);;
                 ZipService.deleteTmpDirContents();
                 logger.info("Tmp dir cleared before super zip");
                 // TODO should we add status for processing etc?
@@ -101,15 +102,20 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
 
                     NotifyService.sendConfirmationEmail(restClient, emailAddress, exportBatchId, submission.getSchemeId(),
                             submissionId);
+
+                    if(failedSubmissionsCount >= 1) {
+                        new SnsService((AmazonSNSClient) AmazonSNSClientBuilder.defaultClient())
+                                .failureInExport(submission.getSchemeName(), failedSubmissionsCount);
+                    }
                 } catch (Exception e) {
                     logger.error("Could not process message while trying to create super zip", e);
                     GrantExportBatchService.updateGrantExportBatchRecordStatus(restClient, exportBatchId, GrantExportStatus.FAILED);
+                    new SnsService((AmazonSNSClient) AmazonSNSClientBuilder.defaultClient())
+                            .failureInExport(submission.getSchemeName(), failedSubmissionsCount);
                 }
             } else {
                 logger.info(
                         String.format("Outstanding exports for export batch %s: %s", exportBatchId, outstandingCount));
-                // TODO: Does any status change here for grant export?
-                new SnsService((AmazonSNSClient) AmazonSNSClientBuilder.defaultClient()).failureInExport(submission.getSchemeName(), outstandingCount);
             }
 
             // STEP 9 - clear tmp dir as this is preserved between frequent invocations
