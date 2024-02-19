@@ -40,6 +40,8 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
         final String emailAddress = messageAttributes.get("emailAddress").getStringValue();
         final String exportBatchId = messageAttributes.get("exportBatchId").getStringValue();
         final String applicationId = messageAttributes.get("applicationId").getStringValue();
+        Long outstandingCount;
+        String schemeName = "";
 
         try {
             logger.info("Received message with submissionId: {} and exportBatchId: {}", submissionId, exportBatchId);
@@ -56,6 +58,7 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
                     submission.getSectionById("ORGANISATION_DETAILS").getQuestionById("APPLICANT_ORG_NAME").getResponse();
 
             submission.setLegalName(legalName);
+            schemeName = submission.getSchemeName();
 
             // STEP 2 - generate .odt from submission
             final String filename = HelperUtils.generateFilename(submission.getLegalName(), submission.getGapId());
@@ -74,10 +77,9 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
             ExportRecordService.updateExportRecordStatus(restClient, exportBatchId, submissionId, GrantExportStatus.COMPLETE);
 
             // STEP 7 - if final submission, email admin
-            final Long outstandingCount = ExportRecordService.getOutstandingExportsCount(restClient, exportBatchId);
+            outstandingCount = ExportRecordService.getOutstandingExportsCount(restClient, exportBatchId);
 
             if (Objects.equals(outstandingCount, 0L)) {
-                final Long failedSubmissionsCount = ExportRecordService.getFailedExportsCount(restClient, exportBatchId);;
                 ZipService.deleteTmpDirContents();
                 logger.info("Tmp dir cleared before super zip");
                 // TODO should we add status for processing etc?
@@ -102,16 +104,9 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
 
                     NotifyService.sendConfirmationEmail(restClient, emailAddress, exportBatchId, submission.getSchemeId(),
                             submissionId);
-
-                    if(failedSubmissionsCount >= 1) {
-                        new SnsService((AmazonSNSClient) AmazonSNSClientBuilder.defaultClient())
-                                .failureInExport(submission.getSchemeName(), failedSubmissionsCount);
-                    }
                 } catch (Exception e) {
                     logger.error("Could not process message while trying to create super zip", e);
                     GrantExportBatchService.updateGrantExportBatchRecordStatus(restClient, exportBatchId, GrantExportStatus.FAILED);
-                    new SnsService((AmazonSNSClient) AmazonSNSClientBuilder.defaultClient())
-                            .failureInExport(submission.getSchemeName(), failedSubmissionsCount);
                 }
             } else {
                 logger.info(
@@ -124,6 +119,15 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
         } catch (Exception e) {
             logger.error("Could not process message", e);
             ExportRecordService.updateExportRecordStatus(restClient, exportBatchId, submissionId, GrantExportStatus.FAILED);
+        } finally {
+            outstandingCount = ExportRecordService.getOutstandingExportsCount(restClient, exportBatchId);
+            if(Objects.equals(outstandingCount, 0L)) {
+                final Long failedSubmissionsCount = ExportRecordService.getFailedExportsCount(restClient, exportBatchId);;
+                if(failedSubmissionsCount > 0) {
+                    new SnsService((AmazonSNSClient) AmazonSNSClientBuilder.defaultClient())
+                            .failureInExport(schemeName, failedSubmissionsCount);
+                }
+            }
         }
 
         logger.info("Message processed successfully");
