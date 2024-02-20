@@ -116,11 +116,14 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
         } finally {
             // TODO replace existing getOutstandingExportsCount with this once feature flag is off
             final Long remainingExports = ExportRecordService.getRemainingExportsCount(restClient, exportBatchId);
+            logger.info(String.format("Submissions export complete. There are %s remaining exports.", remainingExports));
             if(Objects.equals(remainingExports, 0L)) {
-                final Long failedSubmissionsCount = ExportRecordService.getFailedExportsCount(restClient, exportBatchId);;
+                final Long failedSubmissionsCount = ExportRecordService.getFailedExportsCount(restClient, exportBatchId);
+                logger.info(String.format("There are %s failed submissions.", failedSubmissionsCount));
                 if(failedSubmissionsCount > 0) {
-                    new SnsService((AmazonSNSClient) AmazonSNSClientBuilder.defaultClient())
+                    String outcome = new SnsService((AmazonSNSClient) AmazonSNSClientBuilder.defaultClient())
                             .failureInExport(schemeName, failedSubmissionsCount);
+                    logger.info(outcome);
                 }
             }
         }
