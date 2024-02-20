@@ -7,6 +7,10 @@ import com.amazonaws.services.lambda.runtime.tests.EventLoader;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.PutObjectResult;
+import com.amazonaws.services.sns.AmazonSNSClient;
+import com.amazonaws.services.sns.AmazonSNSClientBuilder;
+import com.amazonaws.services.sns.model.PublishRequest;
+import com.amazonaws.services.sns.model.PublishResult;
 import gov.cabinetoffice.gap.enums.GrantExportStatus;
 import gov.cabinetoffice.gap.model.GrantExportDTO;
 import gov.cabinetoffice.gap.model.GrantExportListDTO;
@@ -42,6 +46,8 @@ public class HandlerTest {
     private static MockedStatic<ExportRecordService> mockedExportService;
     private static MockedStatic<SubmissionService> mockedSubmissionService;
     private static MockedStatic<GrantExportBatchService> mockedGrantExportBatchService;
+    private static MockedStatic<AmazonSNSClientBuilder> mockedSnsBuilder;
+    private static AmazonSNSClient mockedSnsClient;
 
     @BeforeAll
     static void beforeAll() {
@@ -52,6 +58,8 @@ public class HandlerTest {
         mockedExportService = mockStatic(ExportRecordService.class);
         mockedSubmissionService = mockStatic(SubmissionService.class);
         mockedGrantExportBatchService = mockStatic(GrantExportBatchService.class);
+        mockedSnsClient = mock(AmazonSNSClient.class);
+        mockedSnsBuilder = mockStatic(AmazonSNSClientBuilder.class);
     }
 
     @AfterAll
@@ -61,6 +69,7 @@ public class HandlerTest {
         mockedExportService.close();
         mockedSubmissionService.close();
         mockedGrantExportBatchService.close();
+        mockedSnsBuilder.close();
     }
 
     private Context createContext() {
@@ -202,7 +211,7 @@ public class HandlerTest {
     }
 
     @Test
-    void ShouldNotSendEmailIfThereIsStillOutstandingExports() {
+    void ShouldNotSendConfirmationEmailIfThereIsStillOutstandingExports() {
         final SQSEvent event = EventLoader.loadSQSEvent("testEvent.json");
         final Context contextMock = createContext();
         final String submissionId = event.getRecords().get(0).getMessageAttributes().get("submissionId")
@@ -301,6 +310,30 @@ public class HandlerTest {
 
         }
 
+    }
+
+    @Test
+    void ShouldSendOutstandingErrorsEmailIfThereAreStillOutstandingExportErrors() throws Exception {
+        final SQSEvent event = EventLoader.loadSQSEvent("testEvent.json");
+        final Context contextMock = createContext();
+        final String exportBatchId = event.getRecords().get(0).getMessageAttributes().get("exportBatchId")
+                .getStringValue();
+        final PublishResult mockResult = new PublishResult().withMessageId("MESSAGE_ID");
+
+        when(SubmissionService.getSubmissionData(any(), anyString(), anyString())).thenThrow(new RuntimeException());
+        mockedExportService.when(() -> ExportRecordService.getRemainingExportsCount(any(), eq(exportBatchId))).thenReturn(0L);
+        mockedExportService.when(() -> ExportRecordService.getFailedExportsCount(any(), eq(exportBatchId))).thenReturn(2L);
+
+        mockedSnsBuilder.when(AmazonSNSClientBuilder::defaultClient).thenReturn(mockedSnsClient);
+        when(mockedSnsClient.publish(any(PublishRequest.class))).thenReturn(mockResult);
+
+        Handler handler = new Handler();
+        handler.handleRequest(event, contextMock);
+
+        verify(mockedSnsClient).publish(any());
+        mockedExportService.verify(() -> ExportRecordService.getRemainingExportsCount(any(), eq(exportBatchId)), atLeastOnce());
+        mockedExportService.verify(() -> ExportRecordService.getFailedExportsCount(any(), eq(exportBatchId)), atLeastOnce()
+        );
     }
 
 }

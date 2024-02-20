@@ -3,6 +3,7 @@ package gov.cabinetoffice.gap.service;
 import gov.cabinetoffice.gap.enums.GrantExportStatus;
 import gov.cabinetoffice.gap.lambda.Handler;
 import gov.cabinetoffice.gap.model.AddingS3ObjectKeyDTO;
+import gov.cabinetoffice.gap.model.FailedExportCountDTO;
 import gov.cabinetoffice.gap.model.GrantExportListDTO;
 import gov.cabinetoffice.gap.model.OutstandingExportCountDTO;
 import okhttp3.OkHttpClient;
@@ -39,6 +40,17 @@ public class ExportRecordService {
         logger.info("Sending getRequest to {}", getEndpoint);
 
         return  RestService.sendGetRequest(restClient, null, getEndpoint, GrantExportListDTO.class);
+    }
+
+    public static long getFailedExportsCount(OkHttpClient restClient, String exportId) throws Exception {
+        final String getEndpoint = "/export-batch/" + exportId + "/failedCount";
+
+        return RestService.sendGetRequest(restClient, null, getEndpoint, FailedExportCountDTO.class).getFailedCount();
+    }
+
+    public static long getRemainingExportsCount(OkHttpClient restClient, String exportId) throws Exception {
+        final String getEndpoint = "/export-batch/" + exportId + "/remainingCount";
+        return RestService.sendGetRequest(restClient, null, getEndpoint, OutstandingExportCountDTO.class).getOutstandingCount();
     }
 
 }
