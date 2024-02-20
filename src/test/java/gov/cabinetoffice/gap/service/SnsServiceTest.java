@@ -37,13 +37,13 @@ public class SnsServiceTest {
 
         final String result = snsService.failureInExport(grantName, applicationCount);
 
-        assertThat(result).isEqualTo("Message with message id:mockMessageId sent.");
+        assertThat(result).isEqualTo("Message with message ID: mockMessageId sent to SNS Topic: arn:partition:service:region:account-id:resource-id");
     }
 
     @Test
     void throwsException() {
         when(snsClient.publish(any())).thenThrow(new AmazonSNSException("error publishing message"));
         final String result = snsService.failureInExport(grantName, applicationCount);
-        assertThat(result).isEqualTo("Error publishing message to SNS topic with error: error publishing message");
+        assertThat(result).isEqualTo("Error publishing message to SNS topic (arn:partition:service:region:account-id:resource-id) with error: error publishing message");
     }
 }
