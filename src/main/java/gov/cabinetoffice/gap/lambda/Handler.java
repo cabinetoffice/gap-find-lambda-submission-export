@@ -122,7 +122,7 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
                 logger.info("Calling getFailedExportsCount");
                 final Long failedSubmissionsCount = ExportRecordService.getFailedExportsCount(restClient, exportBatchId);
                 logger.info(String.format("There are %s failed submissions.", failedSubmissionsCount));
-                if(failedSubmissionsCount > 0) {
+                if(true) {
                     String outcome = new SnsService((AmazonSNSClient) AmazonSNSClientBuilder.defaultClient())
                             .failureInExport(schemeName, failedSubmissionsCount);
                     logger.info(outcome);
