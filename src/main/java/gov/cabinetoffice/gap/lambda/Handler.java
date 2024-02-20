@@ -105,6 +105,7 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
                     }
                 }
 
+                // TODO move back inside the try...catch above when super zip is in production
                 NotifyService.sendConfirmationEmail(restClient, emailAddress, exportBatchId, submission.getSchemeId(),
                         submissionId);
             } else {
