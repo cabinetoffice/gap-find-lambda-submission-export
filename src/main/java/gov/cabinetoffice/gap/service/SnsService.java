@@ -26,7 +26,7 @@ public class SnsService {
         try {
             final PublishRequest request = new PublishRequest(System.getenv("TOPIC_ARN"), body, subject);
             final PublishResult result = snsClient.publish(request);
-            return "Message with message ID:" + result.getMessageId() + " sent to SNS Topic: " + System.getenv("TOPIC_ARN");
+            return "Message with message ID: " + result.getMessageId() + " sent to SNS Topic: " + System.getenv("TOPIC_ARN");
         } catch (AmazonSNSException e) {
             return "Error publishing message to SNS topic (" + System.getenv("TOPIC_ARN") + ") with error: " + e.getErrorMessage();
         }
