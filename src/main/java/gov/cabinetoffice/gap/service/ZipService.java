@@ -43,18 +43,19 @@ public class ZipService {
     private static AmazonS3 s3Client;
 
     public static void createSuperZip(List<GrantExportDTO> completedGrantExports) throws IOException {
+        logger.info("Creating super zip with {} submissions", completedGrantExports.size());
+
         final List<String> filenames = new ArrayList<>();
-        logger.info("Downloading completed grant export with size: {}", completedGrantExports.size());
+
         for (GrantExportDTO grantExport: completedGrantExports) {
-            logger.info("Looping through completed grant exports");
-            logger.info("Grant export with id: {}", grantExport.getExportBatchId());
             final String location = grantExport.getLocation();
             filenames.add(location);
             downloadFile(location, SUBMISSION_EXPORTS_BUCKET_NAME);
         }
-        logger.info("Starting to zip completed grant export inside super zip");
+
         zipFiles(filenames,"");
 
+        logger.info("Super zip file created");
     }
 
     public static void createZip(final AmazonS3 client, final String filename, final String applicationId,

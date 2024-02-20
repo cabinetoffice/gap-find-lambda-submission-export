@@ -13,21 +13,17 @@ public class GrantExportBatchService {
 
     public static void updateGrantExportBatchRecordStatus(OkHttpClient restClient, String exportId, GrantExportStatus newStatus)
             throws Exception {
-
         final String patchEndpoint = "/grant-export-batch/" + exportId + "/status";
-        try{
-            logger.info("Sending patch request to {} to update status to: {}", patchEndpoint, newStatus.toString());
-            RestService.sendPatchRequest(restClient, newStatus, patchEndpoint);
-        }
-        catch (Exception e) {
-            logger.error("Unable to send patch request to update status to {} with error message {}", newStatus.toString(), e);
-        }
+        logger.info("Sending patch request to {} to update status to: {} for export batch with ID: {}",
+                patchEndpoint, newStatus.toString(), exportId);
+        RestService.sendPatchRequest(restClient, newStatus, patchEndpoint);
     }
 
     public static void addS3ObjectKeyToGrantExportBatchRecord(OkHttpClient restClient, String exportId, String s3ObjectKey)
             throws Exception {
-
         final String patchEndpoint = "/grant-export-batch/" + exportId + "/s3-object-key";
+        logger.info("Sending patch request to {} to update location to: {} for export batch with ID: {}",
+                patchEndpoint, s3ObjectKey, exportId);
         RestService.sendPatchRequest(restClient, new AddingS3ObjectKeyDTO(s3ObjectKey), patchEndpoint);
     }
 
