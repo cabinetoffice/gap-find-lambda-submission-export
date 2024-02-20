@@ -183,14 +183,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>2.22.2</version>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.junit.jupiter</groupId>
-                        <artifactId>junit-jupiter-engine</artifactId>
-                        <version>5.9.1</version>
-                    </dependency>
-                </dependencies>
                 <configuration>
                     <environmentVariables>
                         <SUBMISSION_ATTACHMENTS_BUCKET_NAME>testSubmissionAttachmentBucketName</SUBMISSION_ATTACHMENTS_BUCKET_NAME>
@@ -201,6 +193,7 @@
                         <USER_POOL_ID>testUserPoolId</USER_POOL_ID>
                         <PUBLIC_KEY>MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA1Cg0wsx+v3KKqn9sveTVifxX60m09u96wq00/Ip/gg3g2h5pvpB0sDooC+aOVXIuJGO9f6aiwEqfT8Jkm21rs05ytIa99GmbGBC1a9Tb+JROiK0FG8tqQ2ol3Xfz6ygXlxm83eSTZmpmKi5/AfY5d0n7XXuuqRoYpmkq9jEyxnxN9maCvFQN5gBxlEbfc1mdwfe3for5E/1E7uuFc3M7MqyH/UbZZdMayJItNDU6F7eYF99mD8xh19WWLU9mhlaX2UqYJ8DriWTkSHqRPGgeY7Kr8tuIBgYutJ2BUl1tZsVUSe1R2aDiz5Il9vAS3sbJeAiGE7wFMCYRBst0MTk1kQIDAQAB</PUBLIC_KEY>
                         <TOPIC_ARN>arn:partition:service:region:account-id:resource-id</TOPIC_ARN>
+                        <SUPER_ZIP_ENABLED>true</SUPER_ZIP_ENABLED>
                     </environmentVariables>
                 </configuration>
             </plugin>
