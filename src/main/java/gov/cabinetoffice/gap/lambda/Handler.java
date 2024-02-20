@@ -6,6 +6,8 @@ import com.amazonaws.services.lambda.runtime.events.SQSBatchResponse;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.sns.AmazonSNSClient;
+import com.amazonaws.services.sns.AmazonSNSClientBuilder;
 import gov.cabinetoffice.gap.enums.GrantExportStatus;
 import gov.cabinetoffice.gap.model.GrantExportListDTO;
 import gov.cabinetoffice.gap.model.Submission;
@@ -28,7 +30,7 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
     @SneakyThrows
     @Override
     public SQSBatchResponse handleRequest(final SQSEvent event, final Context context) {
-        if(event.getRecords().size() <1) {
+        if (event.getRecords().size() < 1) {
             throw new RuntimeException("No records found in SQS event");
         }
 
@@ -38,6 +40,7 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
         final String emailAddress = messageAttributes.get("emailAddress").getStringValue();
         final String exportBatchId = messageAttributes.get("exportBatchId").getStringValue();
         final String applicationId = messageAttributes.get("applicationId").getStringValue();
+        String schemeName = "";
 
         try {
             logger.info("Received message with submissionId: {} and exportBatchId: {}", submissionId, exportBatchId);
@@ -54,6 +57,7 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
                     submission.getSectionById("ORGANISATION_DETAILS").getQuestionById("APPLICANT_ORG_NAME").getResponse();
 
             submission.setLegalName(legalName);
+            schemeName = submission.getSchemeName();
 
             // STEP 2 - generate .odt from submission
             final String filename = HelperUtils.generateFilename(submission.getLegalName(), submission.getGapId());
@@ -77,7 +81,6 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
             if (Objects.equals(outstandingCount, 0L)) {
                 ZipService.deleteTmpDirContents();
                 logger.info("Tmp dir cleared before super zip");
-                // TODO should we add status for processing etc?
                 try {
                     logger.info("Fetching completedGrantExports to create super zip with exportBatchId: " + exportBatchId );
                     final GrantExportListDTO completedGrantExports = ExportRecordService.getCompletedExportRecordsByBatchId(restClient, exportBatchId);
@@ -86,7 +89,7 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
                     ZipService.createSuperZip(completedGrantExports.getGrantExports());
                     logger.info("Super zip complete");
 
-                    final String superZipFilename = HelperUtils.generateFilename(submission.getSchemeName(), ""); // TODO what should we name this
+                    final String superZipFilename = HelperUtils.generateFilename(submission.getSchemeName(), "");
 
                     logger.info("Starting to upload super zip to s3");
                     String superZipObjectKey = ZipService.uploadZip(submission.getSchemeId(), superZipFilename);
@@ -114,6 +117,16 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
         } catch (Exception e) {
             logger.error("Could not process message", e);
             ExportRecordService.updateExportRecordStatus(restClient, exportBatchId, submissionId, GrantExportStatus.FAILED);
+        } finally {
+            // TODO replace existing getOutstandingExportsCount with this once feature flag is off
+            final Long remainingExports = ExportRecordService.getRemainingExportsCount(restClient, exportBatchId);
+            if(Objects.equals(remainingExports, 0L)) {
+                final Long failedSubmissionsCount = ExportRecordService.getFailedExportsCount(restClient, exportBatchId);;
+                if(failedSubmissionsCount > 0) {
+                    new SnsService((AmazonSNSClient) AmazonSNSClientBuilder.defaultClient())
+                            .failureInExport(schemeName, failedSubmissionsCount);
+                }
+            }
         }
 
         logger.info("Message processed successfully");
