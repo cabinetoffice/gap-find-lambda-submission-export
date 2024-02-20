@@ -7,7 +7,7 @@ import gov.cabinetoffice.gap.model.SubmissionQuestion;
 import gov.cabinetoffice.gap.model.SubmissionQuestionValidation;
 import gov.cabinetoffice.gap.model.SubmissionSection;
 
-import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -528,7 +528,7 @@ public class TestData {
             .schemeName("v2Scheme Name")
             .gapId("GAP-LL-20220927-00001")
             .email("anexamplemail@gov.uk")
-            .submittedDate(Instant.parse("2022-02-15T18:35:24.00Z"))
+            .submittedDate(ZonedDateTime.parse("2022-02-15T18:35:24.00Z"))
             .sections(V2_SUBMISSION_SECTIONS_LIST_LIMITED_WITH_CC_AND_CH)
             .schemeVersion(2)
             .build();
@@ -544,7 +544,7 @@ public class TestData {
             .legalName("Test Org Name v2")
             .schemeName("v2Scheme Name")
             .gapId("GAP-LL-20220927-00001")
-            .submittedDate(Instant.parse("2022-02-15T18:35:24.00Z"))
+            .submittedDate(ZonedDateTime.parse("2022-02-15T18:35:24.00Z"))
             .sections(V2_SUBMISSION_SECTIONS_LIST_LIMITED_WITHOUT_CC_AND_CH)
             .schemeVersion(2)
             .build();
@@ -560,7 +560,7 @@ public class TestData {
             .legalName("Test Non Limited Company v2")
             .schemeName("v2Scheme Name")
             .gapId("GAP-LL-20220927-00001")
-            .submittedDate(Instant.parse("2022-02-15T18:35:24.00Z"))
+            .submittedDate(ZonedDateTime.parse("2022-02-15T18:35:24.00Z"))
             .sections(V2_SUBMISSION_SECTIONS_LIST_NON_LIMITED)
             .schemeVersion(2)
             .build();
@@ -576,7 +576,7 @@ public class TestData {
             .legalName("Test Individual v2")
             .schemeName("v2Scheme Name")
             .gapId("GAP-LL-20220927-00001")
-            .submittedDate(Instant.parse("2022-02-15T18:35:24.00Z"))
+            .submittedDate(ZonedDateTime.parse("2022-02-15T18:35:24.00Z"))
             .sections(V2_SUBMISSION_SECTIONS_LIST_INDIVIDUAL)
             .schemeVersion(2)
             .build();
@@ -647,7 +647,7 @@ public class TestData {
             .legalName("Test Local authority")
             .schemeName("v2Scheme Name")
             .gapId("GAP-LL-20220927-00001")
-            .submittedDate(Instant.parse("2022-02-15T18:35:24.00Z"))
+            .submittedDate(ZonedDateTime.parse("2022-02-15T18:35:24.00Z"))
             .sections(V2_SUBMISSION_SECTIONS_LIST_LOCAL_AUTHORITY)
             .schemeVersion(2)
             .build();
@@ -656,7 +656,7 @@ public class TestData {
             .legalName("Test Org Name")
             .schemeName("Scheme Name")
             .gapId("GAP-LL-20220927-00001")
-            .submittedDate(Instant.parse("2022-02-15T18:35:24.00Z"))
+            .submittedDate(ZonedDateTime.parse("2022-02-15T18:35:24.00Z"))
             .sections(V1_SUBMISSION_SECTIONS_LIST)
             .schemeVersion(1)
             .build();
@@ -673,7 +673,7 @@ public class TestData {
             .legalName("Test Org Name v2")
             .schemeName("v2Scheme Name")
             .gapId("GAP-LL-20220927-00001")
-            .submittedDate(Instant.parse("2022-02-15T18:35:24.00Z"))
+            .submittedDate(ZonedDateTime.parse("2022-02-15T18:35:24.00Z"))
             .sections(V2_SUBMISSION_WITH_CUSTOM_SECTION_LIST)
             .schemeVersion(2)
             .build();
