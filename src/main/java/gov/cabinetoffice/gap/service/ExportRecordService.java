@@ -44,12 +44,13 @@ public class ExportRecordService {
 
     public static long getFailedExportsCount(OkHttpClient restClient, String exportId) throws Exception {
         final String getEndpoint = "/export-batch/" + exportId + "/failedCount";
-
+        logger.info("Sending getRequest to {}", getEndpoint);
         return RestService.sendGetRequest(restClient, null, getEndpoint, FailedExportCountDTO.class).getFailedCount();
     }
 
     public static long getRemainingExportsCount(OkHttpClient restClient, String exportId) throws Exception {
         final String getEndpoint = "/export-batch/" + exportId + "/remainingCount";
+        logger.info("Sending getRequest to {}", getEndpoint);
         return RestService.sendGetRequest(restClient, null, getEndpoint, OutstandingExportCountDTO.class).getOutstandingCount();
     }
 
