@@ -118,10 +118,7 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
             logger.info("Tmp dir cleared");
         } catch (Exception e) {
             logger.error("Could not process message", e);
-
-            if (SUPER_ZIP_ENABLED) {
-                ExportRecordService.updateExportRecordStatus(restClient, exportBatchId, submissionId, GrantExportStatus.FAILED);
-            }
+            ExportRecordService.updateExportRecordStatus(restClient, exportBatchId, submissionId, GrantExportStatus.FAILED);
         } finally {
             // TODO replace existing getOutstandingExportsCount with this once feature flag is off
             final Long remainingExports = ExportRecordService.getRemainingExportsCount(restClient, exportBatchId);
