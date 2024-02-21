@@ -38,7 +38,6 @@ public class ExportRecordService {
             throws Exception {
         final String getEndpoint = "/export-batch/" + exportId + "/completed";
         logger.info("Sending getRequest to {}", getEndpoint);
-
         return  RestService.sendGetRequest(restClient, null, getEndpoint, GrantExportListDTO.class);
     }
 
