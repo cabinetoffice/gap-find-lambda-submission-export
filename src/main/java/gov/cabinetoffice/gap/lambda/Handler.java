@@ -126,8 +126,9 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
             // TODO replace existing getOutstandingExportsCount with this once feature flag is off
             logger.info("Inside finally block calling getRemainingExportsCount");
             final Long remainingExports = ExportRecordService.getRemainingExportsCount(restClient, exportBatchId);
-            logger.info("Submissions export complete. There are {} remaining exports.", remainingExports);
-            if (Objects.equals(remainingExports, 0L)) {
+
+            logger.info(String.format("Submissions export complete. There are {} remaining exports.", remainingExports));
+            if(true) {
                 logger.info("Calling getFailedExportsCount");
                 final Long failedSubmissionsCount = ExportRecordService.getFailedExportsCount(restClient, exportBatchId);
                 logger.info("There are {} failed submissions.", failedSubmissionsCount);
