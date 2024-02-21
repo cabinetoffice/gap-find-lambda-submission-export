@@ -1,10 +1,7 @@
 package gov.cabinetoffice.gap.service;
 
 import gov.cabinetoffice.gap.enums.GrantExportStatus;
-import gov.cabinetoffice.gap.model.AddingS3ObjectKeyDTO;
-import gov.cabinetoffice.gap.model.GrantExportDTO;
-import gov.cabinetoffice.gap.model.GrantExportListDTO;
-import gov.cabinetoffice.gap.model.OutstandingExportCountDTO;
+import gov.cabinetoffice.gap.model.*;
 import okhttp3.OkHttpClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -172,6 +169,62 @@ public class ExportRecordServiceTest {
 
                 assertThrows(RuntimeException.class, () -> ExportRecordService
                         .getCompletedExportRecordsByBatchId(mockedHttpClient, mockExportId.toString()));
+            }
+        }
+    }
+
+    @Nested
+    class getFailedExportsCount {
+        @Test
+        void successfullyGetFailedExportsCount() throws Exception {
+            final FailedExportCountDTO expectedResponse = new FailedExportCountDTO(1L);
+            try (MockedStatic<RestService> mockedRestService = mockStatic(RestService.class)) {
+                when(RestService.sendGetRequest(any(), any(), anyString(), eq(FailedExportCountDTO.class))).thenReturn(expectedResponse);
+                final long response = ExportRecordService.getFailedExportsCount(mockedHttpClient, mockExportId.toString());
+
+                mockedRestService.verify(() -> RestService.sendGetRequest(any(), any(), anyString(), eq(FailedExportCountDTO.class)));
+
+                assertThat(response).isEqualTo(expectedResponse.getFailedCount());
+            }
+        }
+
+        @Test
+        void ShouldThrowExceptionWhenRequestThrowsAnError() {
+            try (MockedStatic<RestService> mockedRestService = mockStatic(RestService.class)) {
+                mockedRestService
+                        .when(() -> RestService.sendGetRequest(any(), any(), anyString(), eq(FailedExportCountDTO.class)))
+                        .thenThrow(new RuntimeException());
+
+                assertThrows(RuntimeException.class, () -> ExportRecordService
+                        .getFailedExportsCount(mockedHttpClient, mockExportId.toString()));
+            }
+        }
+    }
+
+    @Nested
+    class getRemainingExportsCount {
+        @Test
+        void successfullyGetRemainingExportsCount() throws Exception {
+            final OutstandingExportCountDTO expectedResponse = new OutstandingExportCountDTO(1L);
+            try (MockedStatic<RestService> mockedRestService = mockStatic(RestService.class)) {
+                when(RestService.sendGetRequest(any(), any(), anyString(), eq(OutstandingExportCountDTO.class))).thenReturn(expectedResponse);
+                final long response = ExportRecordService.getRemainingExportsCount(mockedHttpClient, mockExportId.toString());
+
+                mockedRestService.verify(() -> RestService.sendGetRequest(any(), any(), anyString(), eq(OutstandingExportCountDTO.class)));
+
+                assertThat(response).isEqualTo(expectedResponse.getOutstandingCount());
+            }
+        }
+
+        @Test
+        void ShouldThrowExceptionWhenRequestThrowsAnError() {
+            try (MockedStatic<RestService> mockedRestService = mockStatic(RestService.class)) {
+                mockedRestService
+                        .when(() -> RestService.sendGetRequest(any(), any(), anyString(), eq(OutstandingExportCountDTO.class)))
+                        .thenThrow(new RuntimeException());
+
+                assertThrows(RuntimeException.class, () -> ExportRecordService
+                        .getRemainingExportsCount(mockedHttpClient, mockExportId.toString()));
             }
         }
     }
