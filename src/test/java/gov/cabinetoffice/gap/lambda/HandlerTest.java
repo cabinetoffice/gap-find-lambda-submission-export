@@ -45,7 +45,6 @@ public class HandlerTest {
     private static MockedStatic<HelperUtils> mockedHelperUtils;
     private static MockedStatic<ExportRecordService> mockedExportService;
     private static MockedStatic<SubmissionService> mockedSubmissionService;
-    private static MockedStatic<GrantExportBatchService> mockedGrantExportBatchService;
     private static MockedStatic<AmazonSNSClientBuilder> mockedSnsBuilder;
     private static AmazonSNSClient mockedSnsClient;
 
@@ -57,7 +56,6 @@ public class HandlerTest {
         mockedHelperUtils = mockStatic(HelperUtils.class);
         mockedExportService = mockStatic(ExportRecordService.class);
         mockedSubmissionService = mockStatic(SubmissionService.class);
-        mockedGrantExportBatchService = mockStatic(GrantExportBatchService.class);
         mockedSnsClient = mock(AmazonSNSClient.class);
         mockedSnsBuilder = mockStatic(AmazonSNSClientBuilder.class);
     }
@@ -68,7 +66,6 @@ public class HandlerTest {
         mockedHelperUtils.close();
         mockedExportService.close();
         mockedSubmissionService.close();
-        mockedGrantExportBatchService.close();
         mockedSnsBuilder.close();
     }
 
@@ -305,7 +302,7 @@ public class HandlerTest {
             mockedExportService.verify(() -> ExportRecordService.updateExportRecordStatus(any(), eq(exportBatchId), eq(submissionId),
                     eq(GrantExportStatus.COMPLETE)), atLeastOnce());
 
-            mockedGrantExportBatchService.verify(() -> GrantExportBatchService.updateGrantExportBatchRecordStatus(any(), eq(exportBatchId),
+            mockedExportService.verify(() -> ExportRecordService.updateGrantExportBatchRecordStatus(any(), eq(exportBatchId),
                     eq(GrantExportStatus.FAILED)), atLeastOnce());
 
         }
