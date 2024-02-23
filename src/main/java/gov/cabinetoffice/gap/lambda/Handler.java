@@ -86,7 +86,7 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
                     ZipService.deleteTmpDirContents();
                     logger.info("Tmp dir cleared before creating super zip");
                     try {
-                        GrantExportBatchService.updateGrantExportBatchRecordStatus(restClient, exportBatchId, GrantExportStatus.PROCESSING);
+                        ExportRecordService.updateGrantExportBatchRecordStatus(restClient, exportBatchId, GrantExportStatus.PROCESSING);
 
                         final GrantExportListDTO completedGrantExports = ExportRecordService.getCompletedExportRecordsByBatchId(restClient, exportBatchId);
                         logger.info("Finished fetching completedGrantExports with size of: {}", completedGrantExports.getGrantExports().size());
@@ -97,11 +97,11 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
 
                         final String superZipObjectKey = ZipService.uploadZip(submission.getSchemeId() + "/" + exportBatchId, superZipFilename);
 
-                        GrantExportBatchService.addS3ObjectKeyToGrantExportBatchRecord(restClient, exportBatchId, superZipObjectKey);
-                        GrantExportBatchService.updateGrantExportBatchRecordStatus(restClient, exportBatchId, GrantExportStatus.COMPLETE);
+                        ExportRecordService.addS3ObjectKeyToGrantExportBatchRecord(restClient, exportBatchId, superZipObjectKey);
+                        ExportRecordService.updateGrantExportBatchRecordStatus(restClient, exportBatchId, GrantExportStatus.COMPLETE);
                     } catch (Exception e) {
                         logger.error("Could not process message while trying to create super zip", e);
-                        GrantExportBatchService.updateGrantExportBatchRecordStatus(restClient, exportBatchId, GrantExportStatus.FAILED);
+                        ExportRecordService.updateGrantExportBatchRecordStatus(restClient, exportBatchId, GrantExportStatus.FAILED);
                     }
                 }
 
@@ -122,7 +122,7 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
         } finally {
             // TODO replace existing getOutstandingExportsCount with this once feature flag is off
             final Long remainingExports = ExportRecordService.getRemainingExportsCount(restClient, exportBatchId);
-            logger.info(String.format("Submissions export complete. There are {} remaining exports.", remainingExports));
+            logger.info(String.format("Submissions export complete. There are %s remaining exports.", remainingExports));
 
             if(Objects.equals(remainingExports, 0L)) {
                 final Long failedSubmissionsCount = ExportRecordService.getFailedExportsCount(restClient, exportBatchId);
