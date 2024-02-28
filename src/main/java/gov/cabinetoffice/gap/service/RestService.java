@@ -19,6 +19,7 @@ import java.security.PublicKey;
 import java.security.spec.X509EncodedKeySpec;
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.ZonedDateTime;
 import java.util.Base64;
 import java.util.Map;
 
@@ -31,6 +32,9 @@ public class RestService {
     public static final Gson gson = new GsonBuilder().registerTypeAdapter(Instant.class,
                     (JsonDeserializer<Instant>) (json, type, jsonDeserializationContext) -> OffsetDateTime
                             .parse(json.getAsJsonPrimitive().getAsString()).toInstant())
+            .registerTypeAdapter(ZonedDateTime.class,
+                    (JsonDeserializer<ZonedDateTime>) (json, type, jsonDeserializationContext) -> OffsetDateTime
+                            .parse(json.getAsJsonPrimitive().getAsString()).toZonedDateTime())
             .create();
 
     private static final Logger logger = LoggerFactory.getLogger(RestService.class);

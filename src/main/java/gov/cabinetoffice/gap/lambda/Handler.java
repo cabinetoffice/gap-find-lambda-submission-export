@@ -6,14 +6,15 @@ import com.amazonaws.services.lambda.runtime.events.SQSBatchResponse;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.sns.AmazonSNSClient;
+import com.amazonaws.services.sns.AmazonSNSClientBuilder;
 import gov.cabinetoffice.gap.enums.GrantExportStatus;
+import gov.cabinetoffice.gap.exceptions.EmptySqsEventException;
+import gov.cabinetoffice.gap.model.GrantExportListDTO;
 import gov.cabinetoffice.gap.model.Submission;
-import gov.cabinetoffice.gap.service.ExportRecordService;
-import gov.cabinetoffice.gap.service.NotifyService;
-import gov.cabinetoffice.gap.service.OdtService;
-import gov.cabinetoffice.gap.service.SubmissionService;
-import gov.cabinetoffice.gap.service.ZipService;
+import gov.cabinetoffice.gap.service.*;
 import gov.cabinetoffice.gap.utils.HelperUtils;
+import lombok.SneakyThrows;
 import okhttp3.OkHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,16 +28,24 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
     private static final AmazonS3 s3client = AmazonS3ClientBuilder.defaultClient();
     private static final OkHttpClient restClient = new OkHttpClient();
 
+    private static final boolean SUPER_ZIP_ENABLED = Boolean.parseBoolean(System.getenv("SUPER_ZIP_ENABLED"));
+
+    @SneakyThrows
     @Override
     public SQSBatchResponse handleRequest(final SQSEvent event, final Context context) {
-        try {
-            final Map<String, SQSEvent.MessageAttribute> messageAttributes = event.getRecords().get(0)
-                    .getMessageAttributes();
-            final String submissionId = messageAttributes.get("submissionId").getStringValue();
-            final String emailAddress = messageAttributes.get("emailAddress").getStringValue();
-            final String exportBatchId = messageAttributes.get("exportBatchId").getStringValue();
-            final String applicationId = messageAttributes.get("applicationId").getStringValue();
+        if (event.getRecords().isEmpty()) {
+            throw new EmptySqsEventException("No records found in SQS event");
+        }
 
+        final Map<String, SQSEvent.MessageAttribute> messageAttributes = event.getRecords().get(0)
+                .getMessageAttributes();
+        final String submissionId = messageAttributes.get("submissionId").getStringValue();
+        final String emailAddress = messageAttributes.get("emailAddress").getStringValue();
+        final String exportBatchId = messageAttributes.get("exportBatchId").getStringValue();
+        final String applicationId = messageAttributes.get("applicationId").getStringValue();
+        String schemeName = "";
+
+        try {
             logger.info("Received message with submissionId: {} and exportBatchId: {}", submissionId, exportBatchId);
 
             // STEP 0 - update export record to PROCESSING
@@ -51,6 +60,7 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
                     submission.getSectionById("ORGANISATION_DETAILS").getQuestionById("APPLICANT_ORG_NAME").getResponse();
 
             submission.setLegalName(legalName);
+            schemeName = submission.getSchemeName();
 
             // STEP 2 - generate .odt from submission
             final String filename = HelperUtils.generateFilename(submission.getLegalName(), submission.getGapId());
@@ -60,7 +70,7 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
             ZipService.createZip(s3client, filename, applicationId, submissionId);
 
             // STEP 4 - upload zip to S3
-            String zipObjectKey = ZipService.uploadZip(submission, filename);
+            String zipObjectKey = ZipService.uploadZip(submission.getGapId(), filename);
 
             // Step 5 - Add S3 object key to export
             ExportRecordService.addS3ObjectKeyToExportRecord(restClient, exportBatchId, submissionId, zipObjectKey);
@@ -72,11 +82,35 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
             final Long outstandingCount = ExportRecordService.getOutstandingExportsCount(restClient, exportBatchId);
 
             if (Objects.equals(outstandingCount, 0L)) {
+                if (SUPER_ZIP_ENABLED) {
+                    ZipService.deleteTmpDirContents();
+                    logger.info("Tmp dir cleared before creating super zip");
+                    try {
+                        GrantExportBatchService.updateGrantExportBatchRecordStatus(restClient, exportBatchId, GrantExportStatus.PROCESSING);
+
+                        final GrantExportListDTO completedGrantExports = ExportRecordService.getCompletedExportRecordsByBatchId(restClient, exportBatchId);
+                        logger.info("Finished fetching completedGrantExports with size of: {}", completedGrantExports.getGrantExports().size());
+
+                        ZipService.createSuperZip(completedGrantExports.getGrantExports());
+
+                        final String superZipFilename = HelperUtils.generateFilename(submission.getSchemeName(), "");
+
+                        final String superZipObjectKey = ZipService.uploadZip(submission.getSchemeId() + "/" + exportBatchId, superZipFilename);
+
+                        GrantExportBatchService.addS3ObjectKeyToGrantExportBatchRecord(restClient, exportBatchId, superZipObjectKey);
+                        GrantExportBatchService.updateGrantExportBatchRecordStatus(restClient, exportBatchId, GrantExportStatus.COMPLETE);
+                    } catch (Exception e) {
+                        logger.error("Could not process message while trying to create super zip", e);
+                        GrantExportBatchService.updateGrantExportBatchRecordStatus(restClient, exportBatchId, GrantExportStatus.FAILED);
+                    }
+                }
+
+                // TODO move back inside the try...catch above when super zip is in production
                 NotifyService.sendConfirmationEmail(restClient, emailAddress, exportBatchId, submission.getSchemeId(),
                         submissionId);
             } else {
                 logger.info(
-                        String.format("Outstanding exports for export batch %s: %s", exportBatchId, outstandingCount));
+                        "Outstanding exports for export batch {}: {}", exportBatchId, outstandingCount);
             }
 
             // STEP 9 - clear tmp dir as this is preserved between frequent invocations
@@ -84,7 +118,21 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
             logger.info("Tmp dir cleared");
         } catch (Exception e) {
             logger.error("Could not process message", e);
-            throw new RuntimeException(e);
+            ExportRecordService.updateExportRecordStatus(restClient, exportBatchId, submissionId, GrantExportStatus.FAILED);
+        } finally {
+            // TODO replace existing getOutstandingExportsCount with this once feature flag is off
+            final Long remainingExports = ExportRecordService.getRemainingExportsCount(restClient, exportBatchId);
+            logger.info(String.format("Submissions export complete. There are {} remaining exports.", remainingExports));
+
+            if(Objects.equals(remainingExports, 0L)) {
+                final Long failedSubmissionsCount = ExportRecordService.getFailedExportsCount(restClient, exportBatchId);
+                logger.info("There are {} failed submissions.", failedSubmissionsCount);
+                if (failedSubmissionsCount > 0L) {
+                    String outcome = new SnsService((AmazonSNSClient) AmazonSNSClientBuilder.defaultClient())
+                            .failureInExport(schemeName, failedSubmissionsCount);
+                    logger.info(outcome);
+                }
+            }
         }
 
         logger.info("Message processed successfully");

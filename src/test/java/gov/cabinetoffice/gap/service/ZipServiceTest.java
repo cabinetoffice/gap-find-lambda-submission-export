@@ -143,34 +143,35 @@ public class ZipServiceTest {
 
     @Test
     void shouldHandleMultiplePeriodsInFilename() {
-        String result = ZipService.parseFileName("330/submission/folder/file.odt.w..pdf", 1, "330","submission");
+        String result = ZipService.parseFileName("330/submission/folder/file.odt.w..pdf", 1, "330/submission/");
 
         assertEquals("file.odt.w._1.pdf", result);
     }
+
     @Test
     void shouldHandleFileNameThatAreNotInTheRegex() {
-        String result = ZipService.parseFileName("330/submission/folder/file.word", 1, "330","submission");
+        String result = ZipService.parseFileName("330/submission/folder/file.word", 1, "330/submission/");
 
         assertEquals("file_1.word", result);
     }
 
     @Test
     void shouldHandleFileNameThatAreNotInTheRegexWithMoreDots() {
-        String result = ZipService.parseFileName("330/submission/folder/file.a.b.c.d.word", 1, "330","submission");
+        String result = ZipService.parseFileName("330/submission/folder/file.a.b.c.d.word", 1, "330/submission/");
 
         assertEquals("file.a.b.c.d_1.word", result);
     }
 
     @Test
     void shouldReturnFileNameWithSuffix() {
-        String result = ZipService.parseFileName("330/submission/folder/file.pdf", 1, "330","submission");
+        String result = ZipService.parseFileName("330/submission/folder/file.pdf", 1, "330/submission/");
 
         assertEquals("file_1.pdf", result);
     }
 
     @Test
     void shouldReturnFileNameWithSuffixWhenFileNameHasLoadsOfSpecialCharacter() {
-        String result = ZipService.parseFileName("330/submission/folder//test... /File {{{}}} Name.???FLL. odt.<>\"/\\|?*"+ "odt.xls", 1, "330","submission");
+        String result = ZipService.parseFileName("330/submission/folder//test... /File {{{}}} Name.???FLL. odt.<>\"/\\|?*"+ "odt.xls", 1, "330/submission/");
 
         assertEquals("_test... _File {{{}}} Name.___FLL. odt.________odt_1.xls", result);
     }
@@ -181,7 +182,7 @@ public class ZipServiceTest {
         final String longFileName = "202303 [DRAFT] - Open Networks Ecosystem competition - Grant Funding Agreement.docx-EmbeddedFile.xlsx";
         final String truncatedLongFileName = longFileName.substring(0, ZipService.LONG_FILE_NAME_LENGTH).trim();
 
-        final String result = ZipService.parseFileName(folder + longFileName, 1, "330","submission");
+        final String result = ZipService.parseFileName(folder + longFileName, 1, "330/submission/");
 
         assertEquals(truncatedLongFileName + "_1.xlsx", result);
     }

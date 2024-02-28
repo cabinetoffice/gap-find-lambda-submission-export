@@ -24,7 +24,7 @@ public class HelperUtils {
                 .replaceAll("[<>:\"/\\\\?*]", "_");
 
         final String cleanGapId = gapId.replace("-", "_");
-        return String.format("%s_%s", cleanLegalName, cleanGapId);
+        return gapId.isEmpty() ? cleanLegalName : String.format("%s_%s", cleanLegalName, cleanGapId);
     }
 
 }

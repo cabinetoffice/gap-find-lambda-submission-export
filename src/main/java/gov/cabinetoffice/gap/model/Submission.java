@@ -6,7 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Objects;
 
@@ -21,7 +21,7 @@ public class Submission {
     private String schemeName;
     private String legalName;
     private String gapId;
-    private Instant submittedDate;
+    private ZonedDateTime submittedDate;
     private List<SubmissionSection> sections;
     private String email;
     private Integer schemeVersion;

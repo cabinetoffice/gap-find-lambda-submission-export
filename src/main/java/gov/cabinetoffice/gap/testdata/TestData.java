@@ -7,7 +7,7 @@ import gov.cabinetoffice.gap.model.SubmissionQuestion;
 import gov.cabinetoffice.gap.model.SubmissionQuestionValidation;
 import gov.cabinetoffice.gap.model.SubmissionSection;
 
-import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -431,7 +431,7 @@ public class TestData {
 
     public static final SubmissionSection CUSTOM_SECTION_SUBMISSION = SubmissionSection
             .builder()
-            .sectionId("CUSTOM")
+            .sectionId("ce43cfe5-53d1-4a69-8a0a-6fce142f87d5")
             .sectionTitle("Custom section")
             .sectionStatus(SubmissionSectionStatus.COMPLETED)
             .questions(List.of(OPTIONAL_YES_NO_QUESTION, OPTIONAL_DATE_QUESTION, OPTIONAL_MULTISELECT_QUESTION, OPTIONAL_FILE_UPLOAD_QUESTION))
@@ -527,7 +527,8 @@ public class TestData {
             .legalName("Test Org Name v2")
             .schemeName("v2Scheme Name")
             .gapId("GAP-LL-20220927-00001")
-            .submittedDate(Instant.parse("2022-02-15T18:35:24.00Z"))
+            .email("anexamplemail@gov.uk")
+            .submittedDate(ZonedDateTime.parse("2022-02-15T18:35:24.00Z"))
             .sections(V2_SUBMISSION_SECTIONS_LIST_LIMITED_WITH_CC_AND_CH)
             .schemeVersion(2)
             .build();
@@ -543,7 +544,7 @@ public class TestData {
             .legalName("Test Org Name v2")
             .schemeName("v2Scheme Name")
             .gapId("GAP-LL-20220927-00001")
-            .submittedDate(Instant.parse("2022-02-15T18:35:24.00Z"))
+            .submittedDate(ZonedDateTime.parse("2022-02-15T18:35:24.00Z"))
             .sections(V2_SUBMISSION_SECTIONS_LIST_LIMITED_WITHOUT_CC_AND_CH)
             .schemeVersion(2)
             .build();
@@ -559,7 +560,7 @@ public class TestData {
             .legalName("Test Non Limited Company v2")
             .schemeName("v2Scheme Name")
             .gapId("GAP-LL-20220927-00001")
-            .submittedDate(Instant.parse("2022-02-15T18:35:24.00Z"))
+            .submittedDate(ZonedDateTime.parse("2022-02-15T18:35:24.00Z"))
             .sections(V2_SUBMISSION_SECTIONS_LIST_NON_LIMITED)
             .schemeVersion(2)
             .build();
@@ -575,7 +576,7 @@ public class TestData {
             .legalName("Test Individual v2")
             .schemeName("v2Scheme Name")
             .gapId("GAP-LL-20220927-00001")
-            .submittedDate(Instant.parse("2022-02-15T18:35:24.00Z"))
+            .submittedDate(ZonedDateTime.parse("2022-02-15T18:35:24.00Z"))
             .sections(V2_SUBMISSION_SECTIONS_LIST_INDIVIDUAL)
             .schemeVersion(2)
             .build();
@@ -600,12 +601,62 @@ public class TestData {
             V1_CUSTOM_SECTION_SUBMISSION
     );
 
+    public static final SubmissionQuestion V2_ORG_TYPE_SUBMISSION_QUESTION_LOCAL_AUTHORITY = SubmissionQuestion.builder()
+            .questionId("APPLICANT_TYPE").fieldTitle("Choose your organisation type").
+            profileField("ORG_TYPE")
+            .hintText("Choose the option that best describes your organisation")
+            .responseType(ResponseTypeEnum.Dropdown)
+            .validation(
+                    SubmissionQuestionValidation
+                            .builder()
+                            .mandatory(true)
+                            .build()
+            ).options(new String[]{
+                    "Limited company",
+                    "Non-limited company",
+                    "Registered charity",
+                    "Unregistered charity",
+                    "Other",
+                    "I am applying as an individual,",
+                    "Local authority"
+            })
+            .response("Local authority")
+            .build();
+
+    public static final SubmissionSection ORGANISATION_DETAILS_SECTION_SUBMISSION_LOCAL_AUTHORITY = SubmissionSection.builder()
+            .sectionId("ORGANISATION_DETAILS")
+            .sectionTitle("Your details")
+            .sectionStatus(SubmissionSectionStatus.COMPLETED)
+            .questions(Arrays.asList(
+                    V2_ORG_TYPE_SUBMISSION_QUESTION_LOCAL_AUTHORITY,
+                    V2_ORG_NAME_SUBMISSION_QUESTION,
+                    V2_ORG_ADDRESS_SUBMISSION_QUESTION,
+                    V2_ORG_COMPANIES_NO_SUBMISSION_QUESTION_WITHOUT_RESPONSE,
+                    V2_ORG_CHARITY_NO_SUBMISSION_QUESTION_WITHOUT_RESPONSE
+            ))
+            .build();
+
+    public static final List<SubmissionSection> V2_SUBMISSION_SECTIONS_LIST_LOCAL_AUTHORITY = Arrays.asList(
+            ELIGIBILITY_SECTION_SUBMISSION,
+            ORGANISATION_DETAILS_SECTION_SUBMISSION_LOCAL_AUTHORITY,
+            FUNDING_DETAILS_SECTION_SUBMISSION
+    );
+
+    public static final Submission V2_SUBMISSION_LOCAL_AUTHORITY = Submission
+            .builder()
+            .legalName("Test Local authority")
+            .schemeName("v2Scheme Name")
+            .gapId("GAP-LL-20220927-00001")
+            .submittedDate(ZonedDateTime.parse("2022-02-15T18:35:24.00Z"))
+            .sections(V2_SUBMISSION_SECTIONS_LIST_LOCAL_AUTHORITY)
+            .schemeVersion(2)
+            .build();
     public static final Submission V1_SUBMISSION = Submission
             .builder()
             .legalName("Test Org Name")
             .schemeName("Scheme Name")
             .gapId("GAP-LL-20220927-00001")
-            .submittedDate(Instant.parse("2022-02-15T18:35:24.00Z"))
+            .submittedDate(ZonedDateTime.parse("2022-02-15T18:35:24.00Z"))
             .sections(V1_SUBMISSION_SECTIONS_LIST)
             .schemeVersion(1)
             .build();
@@ -622,7 +673,7 @@ public class TestData {
             .legalName("Test Org Name v2")
             .schemeName("v2Scheme Name")
             .gapId("GAP-LL-20220927-00001")
-            .submittedDate(Instant.parse("2022-02-15T18:35:24.00Z"))
+            .submittedDate(ZonedDateTime.parse("2022-02-15T18:35:24.00Z"))
             .sections(V2_SUBMISSION_WITH_CUSTOM_SECTION_LIST)
             .schemeVersion(2)
             .build();
