@@ -29,6 +29,7 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
     private static final OkHttpClient restClient = new OkHttpClient();
 
     private static final boolean SUPER_ZIP_ENABLED = Boolean.parseBoolean(System.getenv("SUPER_ZIP_ENABLED"));
+    private static final String ATTACHMENTS_ZIP_FILE_NAME = "attachments"; //TODO: confirm file name
 
     @SneakyThrows
     @Override
@@ -44,6 +45,8 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
         final String exportBatchId = messageAttributes.get("exportBatchId").getStringValue();
         final String applicationId = messageAttributes.get("applicationId").getStringValue();
         String schemeName = "";
+        String filename = "";
+        String gapId = "";
 
         try {
             logger.info("Received message with submissionId: {} and exportBatchId: {}", submissionId, exportBatchId);
@@ -61,13 +64,14 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
 
             submission.setLegalName(legalName);
             schemeName = submission.getSchemeName();
+            gapId = submission.getGapId();
 
             // STEP 2 - generate .odt from submission
-            final String filename = HelperUtils.generateFilename(submission.getLegalName(), submission.getGapId());
+            filename = HelperUtils.generateFilename(submission.getLegalName(), submission.getGapId());
             OdtService.generateSingleOdt(submission, filename);
 
             // STEP 3 - download all relevant attachments and zip along with .odt
-            ZipService.createZip(s3client, filename, applicationId, submissionId);
+            ZipService.createZip(s3client, filename, applicationId, submissionId, true);
 
             // STEP 4 - upload zip to S3
             String zipObjectKey = ZipService.uploadZip(submission.getGapId(), filename);
@@ -93,7 +97,7 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
 
                         ZipService.createSuperZip(completedGrantExports.getGrantExports());
 
-                        final String superZipFilename = HelperUtils.generateFilename(submission.getSchemeName(), "");
+                        final String superZipFilename = HelperUtils.generateFilename(schemeName, "");
 
                         final String superZipObjectKey = ZipService.uploadZip(submission.getSchemeId() + "/" + exportBatchId, superZipFilename);
 
@@ -119,6 +123,18 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
         } catch (Exception e) {
             logger.error("Could not process message", e);
             ExportRecordService.updateExportRecordStatus(restClient, exportBatchId, submissionId, GrantExportStatus.FAILED);
+
+            try {
+                logger.info("Creating attachments zip for failed submission with ID {}", submissionId);
+                // download all relevant attachments and zip without the .odt
+                ZipService.createZip(s3client, filename, applicationId, submissionId, false);
+                final String zipObjectKey = ZipService.uploadZip(gapId, ATTACHMENTS_ZIP_FILE_NAME);
+                ExportRecordService.addS3ObjectKeyToExportRecord(restClient, exportBatchId, submissionId, zipObjectKey);
+            }
+            catch (Exception error) {
+                logger.error("Couldn't create attachments zip for submission with ID " + submissionId,  error);
+            }
+
         } finally {
             // TODO replace existing getOutstandingExportsCount with this once feature flag is off
             final Long remainingExports = ExportRecordService.getRemainingExportsCount(restClient, exportBatchId);

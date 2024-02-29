@@ -11,11 +11,7 @@ import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -42,6 +38,8 @@ public class ZipService {
     public static final Integer LONG_FILE_NAME_LENGTH = 50; //50 characters may be too strict but can revisit if required
     private static AmazonS3 s3Client;
 
+    private static final String FAILED_ATTACHMENTS_FILE_NAME = "failed_attachment_downloads.txt"; //TODO: confirm name
+
     public static void createSuperZip(List<GrantExportDTO> completedGrantExports) throws IOException {
         logger.info("Creating super zip with {} submissions", completedGrantExports.size());
 
@@ -59,16 +57,31 @@ public class ZipService {
     }
 
     public static void createZip(final AmazonS3 client, final String filename, final String applicationId,
-                                 final String submissionId) throws IOException {
+                                 final String submissionId, final boolean addOdt) throws Exception {
         s3Client = client;
         final List<String> submissionAttachmentFileNames = getSubmissionAttachmentFileNames(client, applicationId,
                 submissionId);
-        for (String fileName : submissionAttachmentFileNames) {
-            downloadFile(fileName, SUBMISSION_ATTACHMENTS_BUCKET_NAME);
+        final List<String> failedAttachmentFilenames = new ArrayList<>();
+        for (String attachmentFilename : submissionAttachmentFileNames) {
+            logger.info("Downloading attachment file: {}", attachmentFilename);
+            try {
+                downloadFile(attachmentFilename, SUBMISSION_ATTACHMENTS_BUCKET_NAME);
+            } catch (AmazonServiceException e) {
+                logger.info("Downloading attachment file with name: {} failed.", attachmentFilename);
+                failedAttachmentFilenames.add(attachmentFilename);
+            }
         }
 
+        submissionAttachmentFileNames.removeAll(failedAttachmentFilenames);
         final List<String> fileNamesToZIP = new ArrayList<>(submissionAttachmentFileNames);
-        fileNamesToZIP.add(filename + ".odt");
+
+        if(failedAttachmentFilenames.isEmpty() && addOdt) {
+            fileNamesToZIP.add(filename + ".odt");
+        } else if(failedAttachmentFilenames.size() > 0) {
+            final String failedAttachmentFilename = addFailedAttachmentsToFile(failedAttachmentFilenames);
+            if(failedAttachmentFilename != null)
+                fileNamesToZIP.add(failedAttachmentFilename);
+        }
 
         zipFiles(fileNamesToZIP, applicationId + "/" + submissionId + "/");
 
@@ -91,7 +104,7 @@ public class ZipService {
     public static List<String> getSubmissionAttachmentFileNames(final AmazonS3 s3Client,
                                                                 final String applicationId,
                                                                 final String submissionId) {
-        //s3://gap-sandbox-attachments/1865/468a45e8-3284-48cf-921d-65c21a257927/14f73b83-02a4-485a-bf0f-92c4ac54b1ea/odt_application_template.odt
+        logger.info("Getting attachment filenames for submission with ID {}", submissionId);
         final ListObjectsV2Request req = new ListObjectsV2Request().withBucketName(SUBMISSION_ATTACHMENTS_BUCKET_NAME)
                 .withPrefix(applicationId + "/" + submissionId);
         final ListObjectsV2Result listing = s3Client.listObjectsV2(req);
@@ -117,11 +130,11 @@ public class ZipService {
 
     private static void downloadFile(final String fileName, final String bucketName) {
         try {
+            logger.info("Creating local file with filename: {} and bucket name: {}", fileName, bucketName);
             File localFile = new File(TMP_DIR + fileName);
             s3Client.getObject(new GetObjectRequest(bucketName, fileName), localFile);
         } catch (AmazonServiceException e) {
-            logger.error("Could not download file: " + fileName + " from bucket: " + bucketName,
-                    e);
+            logger.error("Could not download file: " + fileName + " from bucket: " + bucketName, e);
             throw e;
         }
     }
@@ -187,6 +200,26 @@ public class ZipService {
             logger.error("IO exception while creating the zip entry with the name: " + filename, e);
             throw e;
         }
+    }
+
+    private static String addFailedAttachmentsToFile(final List<String> failedAttachmentFilenames) {
+        try {
+            logger.info("Creating text file with {} failed attachment downloads.", failedAttachmentFilenames.size());
+            final File localFile = new File(TMP_DIR + FAILED_ATTACHMENTS_FILE_NAME);
+            final FileWriter myWriter = new FileWriter(localFile);
+
+            for (String filename : failedAttachmentFilenames) {
+                myWriter.write(filename + System.lineSeparator());
+            }
+
+            myWriter.close();
+
+            return FAILED_ATTACHMENTS_FILE_NAME;
+        } catch (Exception e) {
+            logger.error("Could not create text file with failed attachment downloads.", e);
+            return null;
+        }
+
     }
 
     private static String getFileNameFromS3ObjectKey(String objectKey, String applicationIdAndSubmissionId) {
