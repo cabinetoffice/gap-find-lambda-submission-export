@@ -29,7 +29,7 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
     private static final OkHttpClient restClient = new OkHttpClient();
 
     private static final boolean SUPER_ZIP_ENABLED = Boolean.parseBoolean(System.getenv("SUPER_ZIP_ENABLED"));
-    private static final String ATTACHMENTS_ZIP_FILE_NAME = "attachments"; //TODO: confirm file name
+    private static final String ATTACHMENTS_ZIP_FILE_NAME = "attachments";
 
     @SneakyThrows
     @Override

@@ -38,7 +38,7 @@ public class ZipService {
     public static final Integer LONG_FILE_NAME_LENGTH = 50; //50 characters may be too strict but can revisit if required
     private static AmazonS3 s3Client;
 
-    private static final String FAILED_ATTACHMENTS_FILE_NAME = "failed_attachment_downloads.txt"; //TODO: confirm name
+    private static final String FAILED_ATTACHMENTS_FILE_NAME = "failed_attachment_downloads.txt";
 
     public static void createSuperZip(List<GrantExportDTO> completedGrantExports) throws IOException {
         logger.info("Creating super zip with {} submissions", completedGrantExports.size());
