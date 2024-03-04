@@ -27,7 +27,6 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
     private static final Logger logger = LoggerFactory.getLogger(Handler.class);
     private static final AmazonS3 s3client = AmazonS3ClientBuilder.defaultClient();
     private static final OkHttpClient restClient = new OkHttpClient();
-
     private static final String ATTACHMENTS_ZIP_FILE_NAME = "attachments";
 
     @SneakyThrows
