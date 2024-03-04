@@ -221,7 +221,7 @@ public class HandlerTest {
         mockedHelperUtils.when(() -> HelperUtils.getRedirectUrl(SCHEME_ID, exportBatchId))
                 .thenReturn("test.co.uk/testing");
 
-        mockedExportService.when(() -> ExportRecordService.getOutstandingExportsCount(any(), eq(exportBatchId))).thenReturn(0L);
+        mockedExportService.when(() -> ExportRecordService.getRemainingExportsCount(any(), eq(exportBatchId))).thenReturn(0L);
 
         try (final MockedStatic<OdtService> mockedOdtService = mockStatic(OdtService.class);
              final MockedStatic<ZipService> mockedZipService = mockStatic(ZipService.class);
@@ -273,7 +273,7 @@ public class HandlerTest {
                     eq(GrantExportStatus.COMPLETE)));
 
             // STEP 7
-            mockedExportService.verify(() -> ExportRecordService.getOutstandingExportsCount(any(), eq(exportBatchId)));
+            mockedExportService.verify(() -> ExportRecordService.getRemainingExportsCount(any(), eq(exportBatchId)), atLeastOnce());
             mockedNotifyService.verify(() -> NotifyService.sendConfirmationEmail(any(), eq(emailAddress), eq(exportBatchId),
                     eq(V1_SUBMISSION_WITH_ESSENTIAL_SECTION.getSchemeId()), eq(submissionId)));
         }
@@ -302,7 +302,7 @@ public class HandlerTest {
         mockedHelperUtils.when(() -> HelperUtils.getRedirectUrl(SCHEME_ID, exportBatchId))
                 .thenReturn("test.co.uk/testing");
 
-        mockedExportService.when(() -> ExportRecordService.getOutstandingExportsCount(any(), eq(exportBatchId))).thenReturn(10L);
+        mockedExportService.when(() -> ExportRecordService.getRemainingExportsCount(any(), eq(exportBatchId))).thenReturn(10L);
 
         try (final MockedStatic<OdtService> ignored = mockStatic(OdtService.class);
              final MockedStatic<ZipService> mockedZipService = mockStatic(ZipService.class);
