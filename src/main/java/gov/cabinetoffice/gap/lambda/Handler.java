@@ -101,11 +101,12 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
 
                     ExportRecordService.addS3ObjectKeyToGrantExportBatchRecord(restClient, exportBatchId, superZipObjectKey);
                     ExportRecordService.updateGrantExportBatchRecordStatus(restClient, exportBatchId, GrantExportStatus.COMPLETE);
-                    NotifyService.sendConfirmationEmail(restClient, emailAddress, exportBatchId, submission.getSchemeId(),
-                            submissionId);
                 } catch (Exception e) {
                     logger.error("Could not process message while trying to create super zip", e);
                     ExportRecordService.updateGrantExportBatchRecordStatus(restClient, exportBatchId, GrantExportStatus.FAILED);
+                } finally {
+                    NotifyService.sendConfirmationEmail(restClient, emailAddress, exportBatchId, submission.getSchemeId(),
+                            submissionId);
                 }
 
             } else {
