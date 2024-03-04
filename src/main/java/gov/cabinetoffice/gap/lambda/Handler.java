@@ -27,8 +27,6 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
     private static final Logger logger = LoggerFactory.getLogger(Handler.class);
     private static final AmazonS3 s3client = AmazonS3ClientBuilder.defaultClient();
     private static final OkHttpClient restClient = new OkHttpClient();
-
-    private static final boolean SUPER_ZIP_ENABLED = Boolean.parseBoolean(System.getenv("SUPER_ZIP_ENABLED"));
     private static final String ATTACHMENTS_ZIP_FILE_NAME = "attachments";
 
     @SneakyThrows
@@ -83,35 +81,33 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
             ExportRecordService.updateExportRecordStatus(restClient, exportBatchId, submissionId, GrantExportStatus.COMPLETE);
 
             // STEP 7 - if final submission, email admin
-            final Long outstandingCount = ExportRecordService.getOutstandingExportsCount(restClient, exportBatchId);
+            final Long outstandingCount = ExportRecordService.getRemainingExportsCount(restClient, exportBatchId);
 
             if (Objects.equals(outstandingCount, 0L)) {
-                if (SUPER_ZIP_ENABLED) {
-                    ZipService.deleteTmpDirContents();
-                    logger.info("Tmp dir cleared before creating super zip");
-                    try {
-                        ExportRecordService.updateGrantExportBatchRecordStatus(restClient, exportBatchId, GrantExportStatus.PROCESSING);
 
-                        final GrantExportListDTO completedGrantExports = ExportRecordService.getCompletedExportRecordsByBatchId(restClient, exportBatchId);
-                        logger.info("Finished fetching completedGrantExports with size of: {}", completedGrantExports.getGrantExports().size());
+                ZipService.deleteTmpDirContents();
+                logger.info("Tmp dir cleared before creating super zip");
+                try {
+                    ExportRecordService.updateGrantExportBatchRecordStatus(restClient, exportBatchId, GrantExportStatus.PROCESSING);
 
-                        ZipService.createSuperZip(completedGrantExports.getGrantExports());
+                    final GrantExportListDTO completedGrantExports = ExportRecordService.getCompletedExportRecordsByBatchId(restClient, exportBatchId);
+                    logger.info("Finished fetching completedGrantExports with size of: {}", completedGrantExports.getGrantExports().size());
 
-                        final String superZipFilename = HelperUtils.generateFilename(schemeName, "");
+                    ZipService.createSuperZip(completedGrantExports.getGrantExports());
 
-                        final String superZipObjectKey = ZipService.uploadZip(submission.getSchemeId() + "/" + exportBatchId, superZipFilename);
+                    final String superZipFilename = HelperUtils.generateFilename(schemeName, "");
 
-                        ExportRecordService.addS3ObjectKeyToGrantExportBatchRecord(restClient, exportBatchId, superZipObjectKey);
-                        ExportRecordService.updateGrantExportBatchRecordStatus(restClient, exportBatchId, GrantExportStatus.COMPLETE);
-                    } catch (Exception e) {
-                        logger.error("Could not process message while trying to create super zip", e);
-                        ExportRecordService.updateGrantExportBatchRecordStatus(restClient, exportBatchId, GrantExportStatus.FAILED);
-                    }
+                    final String superZipObjectKey = ZipService.uploadZip(submission.getSchemeId() + "/" + exportBatchId, superZipFilename);
+
+                    ExportRecordService.addS3ObjectKeyToGrantExportBatchRecord(restClient, exportBatchId, superZipObjectKey);
+                    ExportRecordService.updateGrantExportBatchRecordStatus(restClient, exportBatchId, GrantExportStatus.COMPLETE);
+                    NotifyService.sendConfirmationEmail(restClient, emailAddress, exportBatchId, submission.getSchemeId(),
+                            submissionId);
+                } catch (Exception e) {
+                    logger.error("Could not process message while trying to create super zip", e);
+                    ExportRecordService.updateGrantExportBatchRecordStatus(restClient, exportBatchId, GrantExportStatus.FAILED);
                 }
 
-                // TODO move back inside the try...catch above when super zip is in production
-                NotifyService.sendConfirmationEmail(restClient, emailAddress, exportBatchId, submission.getSchemeId(),
-                        submissionId);
             } else {
                 logger.info(
                         "Outstanding exports for export batch {}: {}", exportBatchId, outstandingCount);
@@ -136,7 +132,6 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
             }
 
         } finally {
-            // TODO replace existing getOutstandingExportsCount with this once feature flag is off
             final Long remainingExports = ExportRecordService.getRemainingExportsCount(restClient, exportBatchId);
             logger.info(String.format("Submissions export complete. There are %s remaining exports.", remainingExports));
 
