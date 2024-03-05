@@ -123,6 +123,8 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
             ExportRecordService.updateExportRecordStatus(restClient, exportBatchId, submissionId, GrantExportStatus.FAILED);
 
             try {
+                logger.info("Trying to create attachment zip");
+
                 if(submission !=null && submission.isHasAttachments()) {
                     logger.info("Creating attachments zip for failed submission with ID {}", submissionId);
                     // download all relevant attachments and zip without the .odt
@@ -130,6 +132,7 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
                     final String zipObjectKey = ZipService.uploadZip(gapId, ATTACHMENTS_ZIP_FILE_NAME);
                     ExportRecordService.addS3ObjectKeyToExportRecord(restClient, exportBatchId, submissionId, zipObjectKey);
                 } else if(submission !=null) {
+                    logger.info("Updating location to null for submission {}", submissionId);
                     ExportRecordService.addS3ObjectKeyToExportRecord(restClient, exportBatchId, submissionId, null);
                 }
             }
