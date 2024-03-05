@@ -45,6 +45,7 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
         String schemeName = "";
         String filename = "";
         String gapId = "";
+        Submission submission = null;
 
         try {
             logger.info("Received message with submissionId: {} and exportBatchId: {}", submissionId, exportBatchId);
@@ -54,7 +55,7 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
 
             // STEP 1 - get submission from database
             // legal name is assigned from the response they give in the essential questions section
-            final Submission submission = SubmissionService.getSubmissionData(restClient, exportBatchId, submissionId);
+            submission = SubmissionService.getSubmissionData(restClient, exportBatchId, submissionId);
             String legalName = submission.getSchemeVersion() == 1 ?
                     submission.getSectionById("ESSENTIAL").getQuestionById("APPLICANT_ORG_NAME").getResponse()
                     :
@@ -122,11 +123,18 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
             ExportRecordService.updateExportRecordStatus(restClient, exportBatchId, submissionId, GrantExportStatus.FAILED);
 
             try {
-                logger.info("Creating attachments zip for failed submission with ID {}", submissionId);
-                // download all relevant attachments and zip without the .odt
-                ZipService.createZip(s3client, filename, applicationId, submissionId, false);
-                final String zipObjectKey = ZipService.uploadZip(gapId, ATTACHMENTS_ZIP_FILE_NAME);
-                ExportRecordService.addS3ObjectKeyToExportRecord(restClient, exportBatchId, submissionId, zipObjectKey);
+                logger.info("Trying to create attachment zip");
+
+                if(submission !=null && submission.isHasAttachments()) {
+                    logger.info("Creating attachments zip for failed submission with ID {}", submissionId);
+                    // download all relevant attachments and zip without the .odt
+                    ZipService.createZip(s3client, filename, applicationId, submissionId, false);
+                    final String zipObjectKey = ZipService.uploadZip(gapId, ATTACHMENTS_ZIP_FILE_NAME);
+                    ExportRecordService.addS3ObjectKeyToExportRecord(restClient, exportBatchId, submissionId, zipObjectKey);
+                } else if(submission !=null) {
+                    logger.info("Updating location to null for submission {}", submissionId);
+                    ExportRecordService.addS3ObjectKeyToExportRecord(restClient, exportBatchId, submissionId, null);
+                }
             }
             catch (Exception error) {
                 logger.error("Couldn't create attachments zip for submission with ID " + submissionId,  error);
