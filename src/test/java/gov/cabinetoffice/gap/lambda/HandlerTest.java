@@ -19,6 +19,7 @@ import gov.cabinetoffice.gap.testData.TestContext;
 import gov.cabinetoffice.gap.utils.HelperUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.mockito.stubbing.Answer;
@@ -46,17 +47,36 @@ public class HandlerTest {
     private static MockedStatic<SubmissionService> mockedSubmissionService;
     private static MockedStatic<AmazonSNSClientBuilder> mockedSnsBuilder;
     private static AmazonSNSClient mockedSnsClient;
+    private static MockedStatic<NotifyService> mockedNotifyService;
 
     @BeforeAll
     static void beforeAll() {
         s3client = mock(AmazonS3.class);
         mockedS3Builder = mockStatic(AmazonS3ClientBuilder.class);
-        mockedS3Builder.when(AmazonS3ClientBuilder::defaultClient).thenReturn(s3client);
         mockedHelperUtils = mockStatic(HelperUtils.class);
         mockedExportService = mockStatic(ExportRecordService.class);
         mockedSubmissionService = mockStatic(SubmissionService.class);
         mockedSnsClient = mock(AmazonSNSClient.class);
         mockedSnsBuilder = mockStatic(AmazonSNSClientBuilder.class);
+        mockedNotifyService = mockStatic(NotifyService.class);
+    }
+
+    @BeforeEach
+    void beforeEach() {
+        mockedS3Builder.reset();
+        mockedS3Builder.when(AmazonS3ClientBuilder::defaultClient).thenReturn(s3client);
+        mockedHelperUtils.reset();
+        mockedExportService.reset();
+        mockedSubmissionService.reset();
+        mockedSnsBuilder.reset();
+        mockedNotifyService.reset();
+
+        mockedS3Builder.clearInvocations();
+        mockedHelperUtils.clearInvocations();
+        mockedExportService.clearInvocations();
+        mockedSubmissionService.clearInvocations();
+        mockedSnsBuilder.clearInvocations();
+        mockedNotifyService.clearInvocations();
     }
 
     @AfterAll
@@ -66,6 +86,7 @@ public class HandlerTest {
         mockedExportService.close();
         mockedSubmissionService.close();
         mockedSnsBuilder.close();
+        mockedNotifyService.close();
     }
 
     private Context createContext() {
@@ -224,8 +245,7 @@ public class HandlerTest {
         mockedExportService.when(() -> ExportRecordService.getRemainingExportsCount(any(), eq(exportBatchId))).thenReturn(0L);
 
         try (final MockedStatic<OdtService> mockedOdtService = mockStatic(OdtService.class);
-             final MockedStatic<ZipService> mockedZipService = mockStatic(ZipService.class);
-             final MockedStatic<NotifyService> mockedNotifyService = mockStatic(NotifyService.class)) {
+             final MockedStatic<ZipService> mockedZipService = mockStatic(ZipService.class)) {
 
             mockedZipService.when(() -> ZipService.createZip(any(), anyString(), anyString(), anyString(), anyBoolean()))
                     .thenAnswer((Answer<Void>) invocation -> null);
@@ -305,8 +325,7 @@ public class HandlerTest {
         mockedExportService.when(() -> ExportRecordService.getRemainingExportsCount(any(), eq(exportBatchId))).thenReturn(10L);
 
         try (final MockedStatic<OdtService> ignored = mockStatic(OdtService.class);
-             final MockedStatic<ZipService> mockedZipService = mockStatic(ZipService.class);
-             final MockedStatic<NotifyService> mockedNotifyService = mockStatic(NotifyService.class)) {
+             final MockedStatic<ZipService> mockedZipService = mockStatic(ZipService.class)) {
 
             mockedZipService.when(() -> ZipService.createZip(any(), anyString(), anyString(), anyString(), anyBoolean()))
                     .thenAnswer((Answer<Void>) invocation -> null);
@@ -325,12 +344,14 @@ public class HandlerTest {
     }
 
     @Test
-    void updatesStatusWhenSuperZipFails() throws Exception {
+    void updatesStatusAndSendEmailWhenSuperZipFails() throws Exception {
         final SQSEvent event = EventLoader.loadSQSEvent("testEvent.json");
         final Context contextMock = createContext();
         final String submissionId = event.getRecords().get(0).getMessageAttributes().get("submissionId")
                 .getStringValue();
         final String exportBatchId = event.getRecords().get(0).getMessageAttributes().get("exportBatchId")
+                .getStringValue();
+        final String emailAddress = event.getRecords().get(0).getMessageAttributes().get("emailAddress")
                 .getStringValue();
 
         mockedSubmissionService.when(() -> SubmissionService.getSubmissionData(any(), anyString(), anyString()))
@@ -349,8 +370,7 @@ public class HandlerTest {
         when(ExportRecordService.getCompletedExportRecordsByBatchId(any(), any())).thenThrow(new RuntimeException());
 
         try (final MockedStatic<OdtService> mockedOdtService = mockStatic(OdtService.class);
-             final MockedStatic<ZipService> mockedZipService = mockStatic(ZipService.class);
-             final MockedStatic<NotifyService> mockedNotifyService = mockStatic(NotifyService.class)) {
+             final MockedStatic<ZipService> mockedZipService = mockStatic(ZipService.class)) {
 
             mockedZipService.when(() -> ZipService.createZip(any(), anyString(), anyString(), anyString(), anyBoolean()))
                     .thenAnswer((Answer<Void>) invocation -> null);
@@ -376,6 +396,9 @@ public class HandlerTest {
 
             mockedExportService.verify(() -> ExportRecordService.updateGrantExportBatchRecordStatus(any(), eq(exportBatchId),
                     eq(GrantExportStatus.FAILED)), atLeastOnce());
+
+            mockedNotifyService.verify(() -> NotifyService.sendConfirmationEmail(any(), eq(emailAddress), eq(exportBatchId),
+                    eq(V1_SUBMISSION_WITH_ESSENTIAL_SECTION.getSchemeId()), eq(submissionId)));
 
         }
 
