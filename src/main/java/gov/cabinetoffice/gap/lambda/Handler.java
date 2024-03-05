@@ -42,6 +42,7 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
         final String emailAddress = messageAttributes.get("emailAddress").getStringValue();
         final String exportBatchId = messageAttributes.get("exportBatchId").getStringValue();
         final String applicationId = messageAttributes.get("applicationId").getStringValue();
+        final String schemeId = messageAttributes.get("schemeId").getStringValue();
         String schemeName = "";
         String filename = "";
         String gapId = "";
@@ -98,18 +99,14 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
 
                     final String superZipFilename = HelperUtils.generateFilename(schemeName, "");
 
-                    final String superZipObjectKey = ZipService.uploadZip(submission.getSchemeId() + "/" + exportBatchId, superZipFilename);
+                    final String superZipObjectKey = ZipService.uploadZip(schemeId + "/" + exportBatchId, superZipFilename);
 
                     ExportRecordService.addS3ObjectKeyToGrantExportBatchRecord(restClient, exportBatchId, superZipObjectKey);
                     ExportRecordService.updateGrantExportBatchRecordStatus(restClient, exportBatchId, GrantExportStatus.COMPLETE);
                 } catch (Exception e) {
                     logger.error("Could not process message while trying to create super zip", e);
                     ExportRecordService.updateGrantExportBatchRecordStatus(restClient, exportBatchId, GrantExportStatus.FAILED);
-                } finally {
-                    NotifyService.sendConfirmationEmail(restClient, emailAddress, exportBatchId, submission.getSchemeId(),
-                            submissionId);
                 }
-
             } else {
                 logger.info(
                         "Outstanding exports for export batch {}: {}", exportBatchId, outstandingCount);
@@ -152,6 +149,9 @@ public class Handler implements RequestHandler<SQSEvent, SQSBatchResponse> {
                             .failureInExport(schemeName, failedSubmissionsCount);
                     logger.info(outcome);
                 }
+                logger.info("Sending confirmation email to admin");
+                NotifyService.sendConfirmationEmail(restClient, emailAddress, exportBatchId, schemeId,
+                        submissionId);
             }
         }
 
