@@ -34,11 +34,12 @@ public class SnsService {
     }
 
     public String failureInExport(String grantName, long failureCount) {
-        logger.info(String.format("An application download run for %s has encountered errors. This has caused %s applications to become unavailable to download. Sending email...", grantName, failureCount));
+        logger.info("An application download run for {} has encountered errors. This has caused {} applications to become unavailable to download. Sending email...", grantName, failureCount);
 
         //TODO: This copy is subject to change
         final String subject = String.format("%s - Application download run errors", grantName);
-        final String body = String.format("An application download run for %s has encountered errors. This has caused %s applications to become unavailable to download.", grantName, failureCount);
+        final String applicationWord = failureCount > 1 ? "applications" : "application";
+        final String body = String.format("An application download run for \"%s\" has encountered errors. This has caused %s %s to become unavailable to download.", grantName, failureCount, applicationWord);
 
         return publishMessageToTopic(subject, body);
     }
