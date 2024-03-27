@@ -1,12 +1,15 @@
 package gov.cabinetoffice.gap.service;
 
+import com.amazonaws.AmazonServiceException;
 import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.ListObjectsV2Request;
 import com.amazonaws.services.s3.model.ListObjectsV2Result;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -31,6 +34,7 @@ public class ZipServiceTest {
     private File testGapIDFile;
     private File testHelloWorldFile1;
     private File testHelloWorldFile2;
+    private File testFailedAttachmentFile;
 
     @BeforeEach
     void beforeEach() throws Exception {
@@ -67,6 +71,14 @@ public class ZipServiceTest {
         myWriter = new FileWriter("/tmp/some/random/prefix/hello-world2.txt");
         myWriter.write("Test hello world 2 file");
         myWriter.close();
+
+        // Create mock failed attachments file in the right directory
+        new File("/tmp/random/attachment/prefix").mkdirs();
+        testFailedAttachmentFile = new File("/tmp/random/attachment/prefix/failed_attachment_downloads.txt");
+        myWriter = new FileWriter("/tmp/random/attachment/prefix/failed_attachment_downloads.txt");
+        myWriter.write("file_1.text" + System.lineSeparator());
+        myWriter.write("file_2.text" + System.lineSeparator());
+        myWriter.close();
     }
 
     @AfterEach
@@ -74,19 +86,51 @@ public class ZipServiceTest {
         testGapIDFile.delete();
         testHelloWorldFile1.delete();
         testHelloWorldFile2.delete();
+        testFailedAttachmentFile.delete();
         new File("/tmp/submission.zip").delete();
+    }
+
+    @Nested
+    class createZip_failedDownloadAttachments {
+        final ListObjectsV2Result res = Mockito.mock(ListObjectsV2Result.class);
+        final List<S3ObjectSummary> objectSummaryList = new ArrayList<>();
+        final S3ObjectSummary s3ObjectSummary1 = new S3ObjectSummary();
+
+        @Test
+        void attachmentZippedFilesExist() throws Exception {
+            s3ObjectSummary1.setKey("random/attachment/prefix/failed_attachment_downloads.txt");
+            s3ObjectSummary1.setLastModified(new Date());
+            objectSummaryList.add(s3ObjectSummary1);
+
+            when(s3client.listObjectsV2(any(ListObjectsV2Request.class))).thenReturn(res);
+            when(res.getObjectSummaries()).thenReturn(objectSummaryList);
+            when(s3client.getObject((GetObjectRequest) any(), any()))
+                    .thenThrow(new AmazonServiceException("exception"));
+
+            ZipService.createZip(s3client, "testGapID", "random", "attachment", false);
+
+            final String fileZip = "/tmp/submission.zip";
+            try(final ZipInputStream zis = new ZipInputStream(new FileInputStream(fileZip))) {
+                final ZipEntry failedAttachmentsFile = zis.getNextEntry();
+
+                zis.closeEntry();
+
+                assertEquals("failed_attachment_downloads_1.txt", failedAttachmentsFile.getName());
+            }
+        }
+
     }
 
     @Test
     void createZip_zipExists() throws Exception {
-        ZipService.createZip(s3client, "testGapID", "testApplicationId", "testSubmissionId");
+        ZipService.createZip(s3client, "testGapID", "testApplicationId", "testSubmissionId", true);
 
         assertTrue(Files.exists(Path.of("/tmp/submission.zip")));
     }
 
     @Test
     void createZip_zippedFilesExist() throws Exception {
-        ZipService.createZip(s3client, "testGapID", "some", "random");
+        ZipService.createZip(s3client, "testGapID", "some", "random", true);
 
         final String fileZip = "/tmp/submission.zip";
         try(final ZipInputStream zis = new ZipInputStream(new FileInputStream(fileZip))) {
@@ -101,7 +145,7 @@ public class ZipServiceTest {
 
     @Test
     void createZip_zipFilesContentMatches() throws Exception {
-        ZipService.createZip(s3client, "testGapID", "testApplicationId", "testSubmissionId");
+        ZipService.createZip(s3client, "testGapID", "testApplicationId", "testSubmissionId", true);
 
         final String fileZip = "/tmp/submission.zip";
         try(final ZipInputStream zis = new ZipInputStream(new FileInputStream(fileZip))) {
@@ -120,7 +164,7 @@ public class ZipServiceTest {
 
     @Test
     void createZip_onlyTwoFilesCreated() throws Exception {
-        ZipService.createZip(s3client, "testGapID", "testApplicationId", "testSubmissionId");
+        ZipService.createZip(s3client, "testGapID", "testApplicationId", "testSubmissionId", true);
 
         final String fileZip = "/tmp/submission.zip";
         try(final ZipInputStream zis = new ZipInputStream(new FileInputStream(fileZip))) {
