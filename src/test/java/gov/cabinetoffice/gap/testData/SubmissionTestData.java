@@ -24,7 +24,7 @@ public class SubmissionTestData {
     public static final String EMAIL = "testEmailAddress";
 
     public static final Submission V1_SUBMISSION_WITHOUT_SECTIONS = new Submission(SCHEME_ID, SCHEME_NAME, LEGAL_NAME,
-            GAP_ID, SUBMITTED_DATE, null, EMAIL, 1);
+            GAP_ID, SUBMITTED_DATE, null, EMAIL, 1, true);
 
     public static final String SUBMISSION_SINGLE_EMPTY_SECTION_ARRAY_JSON_STRING = """
             [    {
@@ -56,6 +56,6 @@ public class SubmissionTestData {
                             .response("test org name").build())));
 
     public static final Submission V1_SUBMISSION_WITH_ESSENTIAL_SECTION = new Submission(SCHEME_ID, SCHEME_NAME,
-            LEGAL_NAME, GAP_ID, SUBMITTED_DATE, ESSENTIAL_INFO_SECTION, EMAIL, 1);
+            LEGAL_NAME, GAP_ID, SUBMITTED_DATE, ESSENTIAL_INFO_SECTION, EMAIL, 1, true);
 
 }

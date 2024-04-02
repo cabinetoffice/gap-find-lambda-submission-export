@@ -26,6 +26,10 @@
         "emailAddress" : {
           "stringValue" : "test@domain.com",
           "dataType" : "String"
+        },
+        "schemeId" : {
+          "stringValue" : "1",
+          "dataType" : "String"
         }
       },
       "md5OfBody": "7b270e59b47ff90a553787216d55d91d",

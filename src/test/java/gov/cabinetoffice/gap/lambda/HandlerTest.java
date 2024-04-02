@@ -19,6 +19,7 @@ import gov.cabinetoffice.gap.testData.TestContext;
 import gov.cabinetoffice.gap.utils.HelperUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.mockito.stubbing.Answer;
@@ -33,9 +34,8 @@ import static gov.cabinetoffice.gap.testData.SubmissionTestData.SCHEME_ID;
 import static gov.cabinetoffice.gap.testData.SubmissionTestData.V1_SUBMISSION_WITH_ESSENTIAL_SECTION;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.*;
 
 public class HandlerTest {
@@ -45,21 +45,38 @@ public class HandlerTest {
     private static MockedStatic<HelperUtils> mockedHelperUtils;
     private static MockedStatic<ExportRecordService> mockedExportService;
     private static MockedStatic<SubmissionService> mockedSubmissionService;
-    private static MockedStatic<GrantExportBatchService> mockedGrantExportBatchService;
     private static MockedStatic<AmazonSNSClientBuilder> mockedSnsBuilder;
     private static AmazonSNSClient mockedSnsClient;
+    private static MockedStatic<NotifyService> mockedNotifyService;
 
     @BeforeAll
     static void beforeAll() {
         s3client = mock(AmazonS3.class);
         mockedS3Builder = mockStatic(AmazonS3ClientBuilder.class);
-        mockedS3Builder.when(AmazonS3ClientBuilder::defaultClient).thenReturn(s3client);
         mockedHelperUtils = mockStatic(HelperUtils.class);
         mockedExportService = mockStatic(ExportRecordService.class);
         mockedSubmissionService = mockStatic(SubmissionService.class);
-        mockedGrantExportBatchService = mockStatic(GrantExportBatchService.class);
         mockedSnsClient = mock(AmazonSNSClient.class);
         mockedSnsBuilder = mockStatic(AmazonSNSClientBuilder.class);
+        mockedNotifyService = mockStatic(NotifyService.class);
+    }
+
+    @BeforeEach
+    void beforeEach() {
+        mockedS3Builder.reset();
+        mockedS3Builder.when(AmazonS3ClientBuilder::defaultClient).thenReturn(s3client);
+        mockedHelperUtils.reset();
+        mockedExportService.reset();
+        mockedSubmissionService.reset();
+        mockedSnsBuilder.reset();
+        mockedNotifyService.reset();
+
+        mockedS3Builder.clearInvocations();
+        mockedHelperUtils.clearInvocations();
+        mockedExportService.clearInvocations();
+        mockedSubmissionService.clearInvocations();
+        mockedSnsBuilder.clearInvocations();
+        mockedNotifyService.clearInvocations();
     }
 
     @AfterAll
@@ -68,8 +85,8 @@ public class HandlerTest {
         mockedHelperUtils.close();
         mockedExportService.close();
         mockedSubmissionService.close();
-        mockedGrantExportBatchService.close();
         mockedSnsBuilder.close();
+        mockedNotifyService.close();
     }
 
     private Context createContext() {
@@ -107,6 +124,79 @@ public class HandlerTest {
         mockedSubmissionService.verify(() -> SubmissionService.getSubmissionData(any(), eq(exportBatchId), eq(submissionId)));
         mockedExportService.verify(() -> ExportRecordService.updateExportRecordStatus(any(), eq(exportBatchId), eq(submissionId),
                 eq(GrantExportStatus.FAILED)));
+    }
+
+    @Test
+    void updatesStatusAndCreatesAttachmentZipWhenExportFails() {
+        final SQSEvent event = EventLoader.loadSQSEvent("testEvent.json");
+        final Context contextMock = createContext();
+        final String submissionId = event.getRecords().get(0).getMessageAttributes().get("submissionId")
+                .getStringValue();
+        final String exportBatchId = event.getRecords().get(0).getMessageAttributes().get("exportBatchId")
+                .getStringValue();
+        final String applicationId = event.getRecords().get(0).getMessageAttributes().get("applicationId")
+                .getStringValue();
+
+        final String expectedFilename = "test_org_name_GAP_LL_20220927_00001";
+
+        mockedSubmissionService.when(() -> SubmissionService.getSubmissionData(any(), anyString(), anyString()))
+                .thenReturn(V1_SUBMISSION_WITH_ESSENTIAL_SECTION);
+
+        mockedHelperUtils
+                .when(() -> HelperUtils.generateFilename("test org name", V1_SUBMISSION_WITH_ESSENTIAL_SECTION.getGapId()))
+                .thenCallRealMethod();
+
+        when(s3client.putObject(anyString(), anyString(), any(File.class))).thenReturn(new PutObjectResult());
+
+        mockedHelperUtils.when(() -> HelperUtils.getRedirectUrl(SCHEME_ID, exportBatchId))
+                .thenReturn("test.co.uk/testing");
+
+        mockedExportService.when(() -> ExportRecordService.getOutstandingExportsCount(any(), eq(exportBatchId))).thenReturn(0L);
+
+        try (final MockedStatic<OdtService> mockedOdtService = mockStatic(OdtService.class);
+             final MockedStatic<ZipService> mockedZipService = mockStatic(ZipService.class)) {
+
+            mockedZipService.when(() -> ZipService.createZip(any(), anyString(), anyString(), anyString(), eq(true)))
+                    .thenThrow(new RuntimeException());
+
+            mockedZipService.when(() -> ZipService.createZip(any(), anyString(), anyString(), anyString(), eq(false)))
+                    .thenAnswer((Answer<Void>) invocation -> null);
+
+            final String mockS3Key = V1_SUBMISSION_WITH_ESSENTIAL_SECTION.getGapId() + "/attachments.zip";
+
+            mockedZipService.when(() -> ZipService.uploadZip(eq(V1_SUBMISSION_WITH_ESSENTIAL_SECTION.getGapId()), any()))
+                    .thenReturn(mockS3Key);
+
+            Handler handler = new Handler();
+            SQSBatchResponse response = handler.handleRequest(event, contextMock);
+
+            assertEquals(new SQSBatchResponse(), response);
+
+            // STEP 0
+            mockedExportService.verify(() -> ExportRecordService.updateExportRecordStatus(any(), eq(exportBatchId), eq(submissionId),
+                    eq(GrantExportStatus.PROCESSING)), atLeastOnce());
+
+            // STEP 1
+            mockedSubmissionService.verify(() -> SubmissionService.getSubmissionData(any(), eq(exportBatchId), eq(submissionId)), atLeastOnce());
+
+            // STEP 2
+            mockedOdtService
+                    .verify(() -> OdtService.generateSingleOdt(V1_SUBMISSION_WITH_ESSENTIAL_SECTION, expectedFilename));
+
+            // STEP 3
+            mockedZipService.verify(() -> ZipService.createZip(s3client, expectedFilename, applicationId, submissionId, true));
+
+            // Inside catch block
+            mockedZipService.verify(() -> ZipService.createZip(s3client, expectedFilename, applicationId, submissionId, false));
+
+            mockedZipService.verify(() -> ZipService.uploadZip(V1_SUBMISSION_WITH_ESSENTIAL_SECTION.getGapId(), "attachments"));
+
+            mockedExportService.verify(() -> ExportRecordService.addS3ObjectKeyToExportRecord(any(), eq(exportBatchId), eq(submissionId),
+                    eq(mockS3Key)));
+
+            mockedExportService.verify(() -> ExportRecordService.updateExportRecordStatus(any(), eq(exportBatchId), eq(submissionId),
+                    eq(GrantExportStatus.FAILED)), atLeastOnce());
+        }
     }
 
     @Test
@@ -152,13 +242,12 @@ public class HandlerTest {
         mockedHelperUtils.when(() -> HelperUtils.getRedirectUrl(SCHEME_ID, exportBatchId))
                 .thenReturn("test.co.uk/testing");
 
-        mockedExportService.when(() -> ExportRecordService.getOutstandingExportsCount(any(), eq(exportBatchId))).thenReturn(0L);
+        mockedExportService.when(() -> ExportRecordService.getRemainingExportsCount(any(), eq(exportBatchId))).thenReturn(0L);
 
         try (final MockedStatic<OdtService> mockedOdtService = mockStatic(OdtService.class);
-             final MockedStatic<ZipService> mockedZipService = mockStatic(ZipService.class);
-             final MockedStatic<NotifyService> mockedNotifyService = mockStatic(NotifyService.class)) {
+             final MockedStatic<ZipService> mockedZipService = mockStatic(ZipService.class)) {
 
-            mockedZipService.when(() -> ZipService.createZip(any(), anyString(), anyString(), anyString()))
+            mockedZipService.when(() -> ZipService.createZip(any(), anyString(), anyString(), anyString(), anyBoolean()))
                     .thenAnswer((Answer<Void>) invocation -> null);
 
             mockedZipService.when(() -> ZipService.createSuperZip(completedGrantExportsMock.getGrantExports()))
@@ -190,7 +279,7 @@ public class HandlerTest {
                     .verify(() -> OdtService.generateSingleOdt(V1_SUBMISSION_WITH_ESSENTIAL_SECTION, expectedFilename));
 
             // STEP 3
-            mockedZipService.verify(() -> ZipService.createZip(s3client, expectedFilename, applicationId, submissionId));
+            mockedZipService.verify(() -> ZipService.createZip(s3client, expectedFilename, applicationId, submissionId, true));
 
             // STEP 4
             mockedZipService.verify(() -> ZipService.uploadZip(V1_SUBMISSION_WITH_ESSENTIAL_SECTION.getGapId(), expectedFilename));
@@ -204,7 +293,7 @@ public class HandlerTest {
                     eq(GrantExportStatus.COMPLETE)));
 
             // STEP 7
-            mockedExportService.verify(() -> ExportRecordService.getOutstandingExportsCount(any(), eq(exportBatchId)));
+            mockedExportService.verify(() -> ExportRecordService.getRemainingExportsCount(any(), eq(exportBatchId)), atLeastOnce());
             mockedNotifyService.verify(() -> NotifyService.sendConfirmationEmail(any(), eq(emailAddress), eq(exportBatchId),
                     eq(V1_SUBMISSION_WITH_ESSENTIAL_SECTION.getSchemeId()), eq(submissionId)));
         }
@@ -233,13 +322,12 @@ public class HandlerTest {
         mockedHelperUtils.when(() -> HelperUtils.getRedirectUrl(SCHEME_ID, exportBatchId))
                 .thenReturn("test.co.uk/testing");
 
-        mockedExportService.when(() -> ExportRecordService.getOutstandingExportsCount(any(), eq(exportBatchId))).thenReturn(10L);
+        mockedExportService.when(() -> ExportRecordService.getRemainingExportsCount(any(), eq(exportBatchId))).thenReturn(10L);
 
         try (final MockedStatic<OdtService> ignored = mockStatic(OdtService.class);
-             final MockedStatic<ZipService> mockedZipService = mockStatic(ZipService.class);
-             final MockedStatic<NotifyService> mockedNotifyService = mockStatic(NotifyService.class)) {
+             final MockedStatic<ZipService> mockedZipService = mockStatic(ZipService.class)) {
 
-            mockedZipService.when(() -> ZipService.createZip(any(), anyString(), anyString(), anyString()))
+            mockedZipService.when(() -> ZipService.createZip(any(), anyString(), anyString(), anyString(), anyBoolean()))
                     .thenAnswer((Answer<Void>) invocation -> null);
 
             mockedZipService.when(() -> ZipService.uploadZip(eq(V1_SUBMISSION_WITH_ESSENTIAL_SECTION.getGapId()), any()))
@@ -256,12 +344,14 @@ public class HandlerTest {
     }
 
     @Test
-    void updatesStatusWhenSuperZipFails() throws Exception {
+    void updatesStatusAndSendEmailWhenSuperZipFails() throws Exception {
         final SQSEvent event = EventLoader.loadSQSEvent("testEvent.json");
         final Context contextMock = createContext();
         final String submissionId = event.getRecords().get(0).getMessageAttributes().get("submissionId")
                 .getStringValue();
         final String exportBatchId = event.getRecords().get(0).getMessageAttributes().get("exportBatchId")
+                .getStringValue();
+        final String emailAddress = event.getRecords().get(0).getMessageAttributes().get("emailAddress")
                 .getStringValue();
 
         mockedSubmissionService.when(() -> SubmissionService.getSubmissionData(any(), anyString(), anyString()))
@@ -280,10 +370,9 @@ public class HandlerTest {
         when(ExportRecordService.getCompletedExportRecordsByBatchId(any(), any())).thenThrow(new RuntimeException());
 
         try (final MockedStatic<OdtService> mockedOdtService = mockStatic(OdtService.class);
-             final MockedStatic<ZipService> mockedZipService = mockStatic(ZipService.class);
-             final MockedStatic<NotifyService> mockedNotifyService = mockStatic(NotifyService.class)) {
+             final MockedStatic<ZipService> mockedZipService = mockStatic(ZipService.class)) {
 
-            mockedZipService.when(() -> ZipService.createZip(any(), anyString(), anyString(), anyString()))
+            mockedZipService.when(() -> ZipService.createZip(any(), anyString(), anyString(), anyString(), anyBoolean()))
                     .thenAnswer((Answer<Void>) invocation -> null);
 
             final String mockS3Key = V1_SUBMISSION_WITH_ESSENTIAL_SECTION.getGapId() + "/mock_filename.zip";
@@ -305,8 +394,11 @@ public class HandlerTest {
             mockedExportService.verify(() -> ExportRecordService.updateExportRecordStatus(any(), eq(exportBatchId), eq(submissionId),
                     eq(GrantExportStatus.COMPLETE)), atLeastOnce());
 
-            mockedGrantExportBatchService.verify(() -> GrantExportBatchService.updateGrantExportBatchRecordStatus(any(), eq(exportBatchId),
+            mockedExportService.verify(() -> ExportRecordService.updateGrantExportBatchRecordStatus(any(), eq(exportBatchId),
                     eq(GrantExportStatus.FAILED)), atLeastOnce());
+
+            mockedNotifyService.verify(() -> NotifyService.sendConfirmationEmail(any(), eq(emailAddress), eq(exportBatchId),
+                    eq(V1_SUBMISSION_WITH_ESSENTIAL_SECTION.getSchemeId()), eq(submissionId)));
 
         }
 

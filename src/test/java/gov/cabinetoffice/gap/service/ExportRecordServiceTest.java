@@ -228,4 +228,73 @@ public class ExportRecordServiceTest {
             }
         }
     }
+
+    @Nested
+    class updateGrantExportBatchRecordStatus {
+
+        ArgumentCaptor<GrantExportStatus> grantExportStatusArgumentCaptor = ArgumentCaptor
+                .forClass(GrantExportStatus.class);
+
+        @Test
+        void successfullyUpdateStatus() throws Exception {
+            try (MockedStatic<RestService> mockedRestService = mockStatic(RestService.class)) {
+                mockedRestService.when(() -> RestService.sendPatchRequest(any(), any(), anyString())).thenAnswer(i -> null);
+                ExportRecordService.updateGrantExportBatchRecordStatus(mockedHttpClient, mockExportId.toString(), GrantExportStatus.COMPLETE);
+                mockedRestService.verify(() -> RestService.sendPatchRequest(any(), grantExportStatusArgumentCaptor.capture(), anyString()));
+
+                final GrantExportStatus capturedStatus = grantExportStatusArgumentCaptor.getValue();
+
+                assertThat(capturedStatus.toString()).isEqualTo("COMPLETE");
+            }
+        }
+
+        @Test
+        void shouldThrowExceptionWhenRequestThrowsAnError() {
+            try (MockedStatic<RestService> mockedRestService = mockStatic(RestService.class)) {
+                mockedRestService
+                        .when(() -> RestService.sendPatchRequest(any(), any(GrantExportStatus.class), anyString()))
+                        .thenThrow(new RuntimeException());
+
+                assertThrows(RuntimeException.class, () -> ExportRecordService.
+                        updateGrantExportBatchRecordStatus(mockedHttpClient, mockExportId.toString(), GrantExportStatus.COMPLETE));
+            }
+        }
+    }
+
+    @Nested
+    class addS3ObjectKeyToGrantExportBatchRecord {
+
+        ArgumentCaptor<AddingS3ObjectKeyDTO>  addingS3ObjectKeyDTOCaptor = ArgumentCaptor
+                .forClass(AddingS3ObjectKeyDTO.class);
+        final String s3ObjectKey =  "s3ObjectKey";
+
+        @Test
+        void successfullyAddsS3ObjectKey() throws Exception {
+
+            try (MockedStatic<RestService> mockedRestService = mockStatic(RestService.class)) {
+                mockedRestService.when(() -> RestService.sendPatchRequest(any(), any(), anyString())).thenAnswer(i -> null);
+
+                ExportRecordService.addS3ObjectKeyToGrantExportBatchRecord(mockedHttpClient, mockExportId.toString(), s3ObjectKey);
+
+                mockedRestService.verify(() -> RestService.sendPatchRequest(any(), addingS3ObjectKeyDTOCaptor.capture(), anyString()));
+
+                final AddingS3ObjectKeyDTO capturedDTO = addingS3ObjectKeyDTOCaptor.getValue();
+
+                assertThat(capturedDTO.getS3ObjectKey()).isEqualTo(s3ObjectKey);
+
+            }
+        }
+
+        @Test
+        void ShouldThrowExceptionWhenRequestThrowsAnError() {
+            try (MockedStatic<RestService> mockedRestService = mockStatic(RestService.class)) {
+                mockedRestService
+                        .when(() -> RestService.sendPatchRequest(any(), any(AddingS3ObjectKeyDTO.class), anyString()))
+                        .thenThrow(new RuntimeException());
+
+                assertThrows(RuntimeException.class, () -> ExportRecordService.
+                        addS3ObjectKeyToGrantExportBatchRecord(mockedHttpClient, mockExportId.toString(), s3ObjectKey));
+            }
+        }
+    }
 }

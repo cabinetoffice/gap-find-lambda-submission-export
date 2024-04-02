@@ -25,6 +25,7 @@ public class Submission {
     private List<SubmissionSection> sections;
     private String email;
     private Integer schemeVersion;
+    private boolean hasAttachments;
 
     public SubmissionSection getSectionById(String sectionId) {
         return this.sections
