@@ -21,6 +21,7 @@ public class Submission {
     private String schemeName;
     private String legalName;
     private String gapId;
+    private String submissionName;
     private ZonedDateTime submittedDate;
     private List<SubmissionSection> sections;
     private String email;
