@@ -140,20 +140,30 @@ public class OdtService {
         h2.addStyledContentWhitespace(Heading_20_2, "Application details");
         OdfTable table;
 
+        final boolean hasSubmissionName = submission.getSubmissionName() != null && !submission.getSubmissionName().isEmpty();
+        
         if(isIndividual){
-            table = OdfTable.newTable(odt, 4, 2);
+            final int tableSize = hasSubmissionName ? 5 : 4;
+            table = OdfTable.newTable(odt, tableSize, 2);
             table.getRowByIndex(0).getCellByIndex(0).setStringValue("Lead Applicant");
             table.getRowByIndex(0).getCellByIndex(1).setStringValue(email);
             table.getRowByIndex(1).getCellByIndex(0).setStringValue("GAP ID");
             table.getRowByIndex(1).getCellByIndex(1).setStringValue(submission.getGapId());
             table.getRowByIndex(2).getCellByIndex(0).setStringValue("Applying for");
             table.getRowByIndex(2).getCellByIndex(1).setStringValue(submission.getSchemeName());
-            table.getRowByIndex(3).getCellByIndex(0).setStringValue("Submitted on");
-            table.getRowByIndex(3).getCellByIndex(1).setStringValue(Objects.equals(null,
+            int rowIndex = 3;
+            if (hasSubmissionName) {
+                table.getRowByIndex(rowIndex).getCellByIndex(0).setStringValue("Submitted for");
+                table.getRowByIndex(rowIndex).getCellByIndex(1).setStringValue(submission.getSubmissionName());
+                rowIndex++;
+            }
+            table.getRowByIndex(rowIndex).getCellByIndex(0).setStringValue("Submitted on");
+            table.getRowByIndex(rowIndex).getCellByIndex(1).setStringValue(Objects.equals(null,
                     submission.getSubmittedDate())
                     ? "Not yet submitted" : submission.getSubmittedDate().format(formatter));
         } else {
-            table = OdfTable.newTable(odt, 5, 2);
+            final int tableSize = hasSubmissionName ? 6 : 5;
+            table = OdfTable.newTable(odt, tableSize, 2);
             table.getRowByIndex(0).getCellByIndex(0).setStringValue("Organisation");
             table.getRowByIndex(0).getCellByIndex(1).setStringValue(submission.getLegalName());
             table.getRowByIndex(1).getCellByIndex(0).setStringValue("Lead Applicant");
@@ -162,11 +172,16 @@ public class OdtService {
             table.getRowByIndex(2).getCellByIndex(1).setStringValue(submission.getGapId());
             table.getRowByIndex(3).getCellByIndex(0).setStringValue("Applying for");
             table.getRowByIndex(3).getCellByIndex(1).setStringValue(submission.getSchemeName());
-            table.getRowByIndex(4).getCellByIndex(0).setStringValue("Submitted on");
-            table.getRowByIndex(4).getCellByIndex(1).setStringValue(Objects.equals(null,
+            int rowIndex = 4;
+            if (hasSubmissionName) {
+                table.getRowByIndex(rowIndex).getCellByIndex(0).setStringValue("Submitted for");
+                table.getRowByIndex(rowIndex).getCellByIndex(1).setStringValue(submission.getSubmissionName());
+                rowIndex++;
+            }
+            table.getRowByIndex(rowIndex).getCellByIndex(0).setStringValue("Submitted on");
+            table.getRowByIndex(rowIndex).getCellByIndex(1).setStringValue(Objects.equals(null,
                     submission.getSubmittedDate())
                     ? "Not yet submitted" : submission.getSubmittedDate().format(formatter));
-
         }
         documentText.appendChild(h1);
         documentText.appendChild(p);
