@@ -153,7 +153,7 @@ public class OdtService {
             table.getRowByIndex(2).getCellByIndex(1).setStringValue(submission.getSchemeName());
             int rowIndex = 3;
             if (hasSubmissionName) {
-                table.getRowByIndex(rowIndex).getCellByIndex(0).setStringValue("Submitted for");
+                table.getRowByIndex(rowIndex).getCellByIndex(0).setStringValue("Application Name");
                 table.getRowByIndex(rowIndex).getCellByIndex(1).setStringValue(submission.getSubmissionName());
                 rowIndex++;
             }
@@ -174,7 +174,7 @@ public class OdtService {
             table.getRowByIndex(3).getCellByIndex(1).setStringValue(submission.getSchemeName());
             int rowIndex = 4;
             if (hasSubmissionName) {
-                table.getRowByIndex(rowIndex).getCellByIndex(0).setStringValue("Submitted for");
+                table.getRowByIndex(rowIndex).getCellByIndex(0).setStringValue("Application Name");
                 table.getRowByIndex(rowIndex).getCellByIndex(1).setStringValue(submission.getSubmissionName());
                 rowIndex++;
             }
