@@ -25,13 +25,13 @@ import java.util.Map;
 
 public class RestService {
 
-    public static final String BACKEND_API_URL = System.getenv("BACKEND_API_URL");
+    public static final String BACKEND_API_URL = getEnvOrProperty("BACKEND_API_URL");
 
     public static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
 
     public static final Gson gson = new GsonBuilder().registerTypeAdapter(Instant.class,
-                    (JsonDeserializer<Instant>) (json, type, jsonDeserializationContext) -> OffsetDateTime
-                            .parse(json.getAsJsonPrimitive().getAsString()).toInstant())
+            (JsonDeserializer<Instant>) (json, type, jsonDeserializationContext) -> OffsetDateTime
+                    .parse(json.getAsJsonPrimitive().getAsString()).toInstant())
             .registerTypeAdapter(ZonedDateTime.class,
                     (JsonDeserializer<ZonedDateTime>) (json, type, jsonDeserializationContext) -> OffsetDateTime
                             .parse(json.getAsJsonPrimitive().getAsString()).toZonedDateTime())
@@ -39,11 +39,24 @@ public class RestService {
 
     private static final Logger logger = LoggerFactory.getLogger(RestService.class);
 
-    private static final String ADMIN_API_SECRET = System.getenv("ADMIN_API_SECRET");
+    private static final String ADMIN_API_SECRET = getEnvOrProperty("ADMIN_API_SECRET");
 
-    private static final String PUBLIC_KEY = System.getenv("PUBLIC_KEY");
+    private static final String PUBLIC_KEY = getEnvOrProperty("PUBLIC_KEY");
 
-    public static <T> T sendGetRequest(OkHttpClient restClient, Map<String, String> params, String endpoint, Class<T> clazz) throws Exception {
+    /**
+     * Get environment variable or system property (for local testing)
+     * Checks environment variable first, then falls back to system property
+     */
+    private static String getEnvOrProperty(String name) {
+        String value = System.getenv(name);
+        if (value == null || value.isEmpty()) {
+            value = System.getProperty(name);
+        }
+        return value;
+    }
+
+    public static <T> T sendGetRequest(OkHttpClient restClient, Map<String, String> params, String endpoint,
+            Class<T> clazz) throws Exception {
 
         HttpUrl.Builder httpBuilder = HttpUrl.get(BACKEND_API_URL + endpoint).newBuilder();
         if (params != null) {
@@ -59,12 +72,16 @@ public class RestService {
                 logger.info("Successfully fetched from " + endpoint);
                 return gson.fromJson(response.body().string(), clazz);
             } else {
-                throw new RuntimeException();
+                String errorBody = response.body() != null ? response.body().string() : "No error body";
+                throw new RuntimeException(
+                        String.format("Error occurred while fetching from %s. Status: %d, Response: %s", endpoint,
+                                response.code(), errorBody));
             }
         }
     }
 
-    public static <T> void sendPostRequest(OkHttpClient restClient, T requestBodyDTO, String endpoint) throws Exception {
+    public static <T> void sendPostRequest(OkHttpClient restClient, T requestBodyDTO, String endpoint)
+            throws Exception {
 
         final RequestBody body = RequestBody.create(gson.toJson(requestBodyDTO), JSON);
 
@@ -85,12 +102,16 @@ public class RestService {
             if (response.isSuccessful()) {
                 logger.info("Successfully posted to " + endpoint);
             } else {
-                throw new RuntimeException("Error occured while posting to " + endpoint);
+                String errorBody = response.body() != null ? response.body().string() : "No error body";
+                throw new RuntimeException(
+                        String.format("Error occurred while posting to %s. Status: %d, Response: %s", endpoint,
+                                response.code(), errorBody));
             }
         }
     }
 
-    public static <T> void sendPatchRequest(OkHttpClient restClient, T requestBodyDTO, String endpoint) throws Exception {
+    public static <T> void sendPatchRequest(OkHttpClient restClient, T requestBodyDTO, String endpoint)
+            throws Exception {
 
         final RequestBody body = RequestBody.create(gson.toJson(requestBodyDTO), JSON);
 
@@ -106,7 +127,8 @@ public class RestService {
     }
 
     /**
-     * Adds encrypted ADMIN_API_SECRET as an Authorization header to every outbound REST call
+     * Adds encrypted ADMIN_API_SECRET as an Authorization header to every outbound
+     * REST call
      */
     public static Request.Builder defaultRequestBuilder() {
         final String encryptedSecret = encrypt(ADMIN_API_SECRET, PUBLIC_KEY);
