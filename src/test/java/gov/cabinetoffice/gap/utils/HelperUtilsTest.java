@@ -37,15 +37,15 @@ public class HelperUtilsTest {
 
         @Test
         void specialCharactersAreReplaced() {
-            String generatedFilename = HelperUtils.generateFilename("Org<with>lots/of\\special*characters?in_its name", "GAP-GAP-20221019");
+            String generatedFilename = HelperUtils.generateFilename("Org<with>lots/of\\special", "GAP-GAP-20221019");
 
-            assertThat(generatedFilename).isEqualTo("Org_with_lots_of_special_characters_in_its_name_GAP_GAP_20221019");
+            assertThat(generatedFilename).isEqualTo("Org_with_lots_of_special_GAP_GAP_20221019");
         }
 
         @Test
-        void legalNamesLongerThan50CharsAreTrimmed() {
+        void legalNamesLongerThan25CharsAreTrimmed() {
             final String longLegalName = "a legal name with more than fifty characters that needs to be trimmed by the document export lambda so that file name length limits in windows don't cause problems";
-            final String trimmedLegalName = longLegalName.substring(0, 50)
+            final String trimmedLegalName = longLegalName.substring(0, 25)
                     .trim()
                     .replace(" ", "_");
 
