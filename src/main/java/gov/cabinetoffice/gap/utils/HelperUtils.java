@@ -7,6 +7,7 @@ public class HelperUtils {
     }
 
     private static final String DOMAIN = System.getenv("REDIRECT_DOMAIN");
+    private static final String DEFAULT_FILENAME = "submission";
 
     public static String getRedirectUrl(String schemeId, String batchId) {
         return DOMAIN + "/scheme/" + schemeId + "/" + batchId;
@@ -18,7 +19,12 @@ public class HelperUtils {
             throw new RuntimeException("legalName and gapId cannot be null");
         }
 
-        final String truncatedLegalName = legalName.length() > 25 ? legalName.substring(0, 25).trim() : legalName;
+        final String strippedLegalName = UnsupportedCharacterHelper.stripUnsupportedCharacters(legalName)
+                .replaceAll("\\s+", " ")
+                .trim();
+        final String nameForFile = strippedLegalName.isEmpty() ? DEFAULT_FILENAME : strippedLegalName;
+
+        final String truncatedLegalName = nameForFile.length() > 25 ? nameForFile.substring(0, 25).trim() : nameForFile;
         final String cleanLegalName = truncatedLegalName
                 .replace(" ", "_")
                 .replaceAll("[<>:\"/\\\\?*]", "_");
