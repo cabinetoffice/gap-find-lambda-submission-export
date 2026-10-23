@@ -55,6 +55,34 @@ public class HelperUtilsTest {
         }
 
         @Test
+        void emojisAreRemoved() {
+            String generatedFilename = HelperUtils.generateFilename("Rainbow \uD83C\uDF08 Charity \u2705", "GAP-GAP-20221019");
+
+            assertThat(generatedFilename).isEqualTo("Rainbow_Charity_GAP_GAP_20221019");
+        }
+
+        @Test
+        void emojisAreRemovedBeforeTrimming() {
+            String generatedFilename = HelperUtils.generateFilename("\uD83D\uDE80\uD83D\uDE80 Twenty five characters long name", "GAP-GAP-20221019");
+
+            assertThat(generatedFilename).isEqualTo("Twenty_five_characters_lo_GAP_GAP_20221019");
+        }
+
+        @Test
+        void legalNameOfOnlyEmojisFallsBackToDefault() {
+            String generatedFilename = HelperUtils.generateFilename("\uD83C\uDF08\uD83D\uDE80", "GAP-GAP-20221019");
+
+            assertThat(generatedFilename).isEqualTo("submission_GAP_GAP_20221019");
+        }
+
+        @Test
+        void accentedCharactersAreKept() {
+            String generatedFilename = HelperUtils.generateFilename("Café Société", "");
+
+            assertThat(generatedFilename).isEqualTo("Café_Société");
+        }
+
+        @Test
         void nullLegalNameGenerateFilename() {
 
             assertThatThrownBy(() -> HelperUtils.generateFilename(null, "GAP-GAP-20221019"))

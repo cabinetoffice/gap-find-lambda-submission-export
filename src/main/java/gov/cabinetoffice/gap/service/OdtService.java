@@ -3,6 +3,7 @@ package gov.cabinetoffice.gap.service;
 import gov.cabinetoffice.gap.model.Submission;
 import gov.cabinetoffice.gap.model.SubmissionQuestion;
 import gov.cabinetoffice.gap.model.SubmissionSection;
+import gov.cabinetoffice.gap.utils.UnsupportedCharacterHelper;
 import org.odftoolkit.odfdom.doc.OdfTextDocument;
 import org.odftoolkit.odfdom.doc.table.OdfTable;
 import org.odftoolkit.odfdom.dom.OdfContentDom;
@@ -23,11 +24,16 @@ import org.odftoolkit.odfdom.incubator.doc.text.OdfTextHeading;
 import org.odftoolkit.odfdom.incubator.doc.text.OdfTextParagraph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static gov.cabinetoffice.gap.utils.UnsupportedCharacterHelper.containsUnsupportedCharacters;
 
 public class OdtService {
 
@@ -107,6 +113,9 @@ public class OdtService {
                         populateQuestionResponseTable(count, section, documentText, contentDom, odt);
                     }
                 });
+
+                stripUnsupportedCharacters(documentText);
+
                 odt.save(String.format("/tmp/%s.odt", filename));
                 odt.close();
             } catch (Exception e) {
@@ -114,6 +123,27 @@ public class OdtService {
                 throw e;
         }
         logger.info("ODT file generated successfully");
+    }
+
+    private static void stripUnsupportedCharacters(final Node node) {
+        if (node.getNodeType() == Node.TEXT_NODE && containsUnsupportedCharacters(node.getNodeValue())) {
+            node.setNodeValue(UnsupportedCharacterHelper.stripUnsupportedCharacters(node.getNodeValue()));
+        }
+
+        final NamedNodeMap attributes = node.getAttributes();
+        if (attributes != null) {
+            for (int i = 0; i < attributes.getLength(); i++) {
+                final Node attribute = attributes.item(i);
+                if (containsUnsupportedCharacters(attribute.getNodeValue())) {
+                    attribute.setNodeValue(UnsupportedCharacterHelper.stripUnsupportedCharacters(attribute.getNodeValue()));
+                }
+            }
+        }
+
+        final NodeList children = node.getChildNodes();
+        for (int i = 0; i < children.getLength(); i++) {
+            stripUnsupportedCharacters(children.item(i));
+        }
     }
 
     private static void addPageBreak(OdfContentDom contentDocument, OdfTextDocument doc) throws Exception {
